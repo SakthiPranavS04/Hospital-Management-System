@@ -1,12 +1,27 @@
+import { useState } from 'react'
 import { Building2 } from 'lucide-react'
-import { Card, Badge } from '../components/UI.jsx'
-import { rooms, departments, admissions, deptName, patientName, doctorName } from '../data/mockData.js'
+import { Card, Btn, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
+import { rooms as initRooms, departments, admissions, deptName, patientName, doctorName } from '../data/mockData.js'
 
-export default function Rooms() {
+export default function Rooms({ roomModal, onRoomModalClose }) {
+  const [rooms, setRooms] = useState(initRooms)
+  const [form, setForm] = useState({ number:'', floor:'', type:'General', dept:'', available:true })
+
   const activeAdmissions = admissions.filter(a=>a.status==='Active')
   const getAdmission = roomId => activeAdmissions.find(a=>a.roomId===roomId)
 
   const typeColor = { ICU:'var(--red)', Private:'var(--accent2)', General:'var(--accent)', 'Semi-Private':'var(--amber)', Emergency:'var(--red)' }
+
+  const save = () => {
+    if (!form.number || !form.floor || !form.dept) return
+    setRooms(prev => [...prev, {
+      ...form, id: Date.now(),
+      floor: +form.floor,
+      available: true
+    }])
+    onRoomModalClose()
+    setForm({ number:'', floor:'', type:'General', dept:'', available:true })
+  }
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
@@ -99,6 +114,33 @@ export default function Rooms() {
             )
           })}
         </div>
+
+        {/* Add Room Modal */}
+        <Modal open={roomModal} onClose={onRoomModalClose} title="Add New Room">
+          <FormGrid>
+            <div><label>Room Number *</label><input value={form.number} onChange={e=>setForm({...form,number:e.target.value})} placeholder="e.g., 101" /></div>
+            <div><label>Floor *</label><input type="number" value={form.floor} onChange={e=>setForm({...form,floor:e.target.value})} placeholder="e.g., 1" /></div>
+            <div><label>Room Type *</label>
+              <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
+                <option>General</option>
+                <option>Semi-Private</option>
+                <option>Private</option>
+                <option>ICU</option>
+                <option>Emergency</option>
+              </select>
+            </div>
+            <div><label>Department *</label>
+              <select value={form.dept} onChange={e=>setForm({...form,dept:e.target.value})}>
+                <option value="">Select department</option>
+                {departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          </FormGrid>
+          <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+            <Btn variant="secondary" onClick={onRoomModalClose}>Cancel</Btn>
+            <Btn onClick={save}>Add Room</Btn>
+          </div>
+        </Modal>
       </div>
     </div>
   )

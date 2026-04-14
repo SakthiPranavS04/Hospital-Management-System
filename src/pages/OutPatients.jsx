@@ -3,9 +3,8 @@ import { Plus } from 'lucide-react'
 import { PageHeader, Btn, Card, Table, Modal, FormGrid, FullRow } from '../components/UI.jsx'
 import { outPatientVisits as initVisits, patients, doctors, appointments, doctorName, patientName } from '../data/mockData.js'
 
-export default function OutPatients() {
+export default function OutPatients({ outpatientModal, onOutpatientModalClose }) {
   const [visits, setVisits] = useState(initVisits)
-  const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
 
   const save = () => {
@@ -15,7 +14,7 @@ export default function OutPatients() {
       patientId:+form.patientId, doctorId:+form.doctorId,
       date:new Date().toISOString().split('T')[0],
     }])
-    setModal(false)
+    onOutpatientModalClose()
     setForm({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
   }
 
@@ -34,10 +33,6 @@ export default function OutPatients() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
-        {/* Action Button */}
-        <div style={{ marginBottom:20 }}>
-          <Btn onClick={()=>setModal(true)} style={{ whiteSpace:'nowrap' }}><Plus size={14}/> Record Visit</Btn>
-        </div>
         <Card>
           <Table
             headers={['ID','Patient','Doctor','Visit Date','Chief Complaint','Diagnosis','Treatment','Follow-up']}
@@ -46,7 +41,7 @@ export default function OutPatients() {
           />
         </Card>
 
-        <Modal open={modal} onClose={()=>setModal(false)} title="Record OPD Visit">
+        <Modal open={outpatientModal} onClose={onOutpatientModalClose} title="Record OPD Visit">
           <FormGrid>
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
@@ -66,7 +61,7 @@ export default function OutPatients() {
             <div><label>Follow-up Date</label><input type="date" value={form.followUp} onChange={e=>setForm({...form,followUp:e.target.value})} /></div>
           </FormGrid>
           <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-            <Btn variant="secondary" onClick={()=>setModal(false)}>Cancel</Btn>
+            <Btn variant="secondary" onClick={onOutpatientModalClose}>Cancel</Btn>
             <Btn onClick={save}>Save Visit</Btn>
           </div>
         </Modal>

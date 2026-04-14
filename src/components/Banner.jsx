@@ -1,76 +1,167 @@
 import { useLocation } from 'react-router-dom'
 
-export default function Banner() {
+export default function Banner({ menuHovered, onRegisterPatient, onNewAppointment, onNewAdmission, onRecordVisit, onNewBill, onAddRoom }) {
   const location = useLocation()
   
   const bannerData = {
-    '/': { color: '#4f8ef7', title: 'Dashboard', icon: '📊' },
-    '/patients': { color: '#00d4ff', title: 'Patients', icon: '👥' },
-    '/appointments': { color: '#9333ea', title: 'Appointments', icon: '📅' },
-    '/inpatients': { color: '#ec4899', title: 'In-Patients', icon: '🏥' },
-    '/outpatients': { color: '#06b6d4', title: 'Out-Patients', icon: '👨‍⚕️' },
-    '/billing': { color: '#f59e0b', title: 'Billing', icon: '💰' },
-    '/rooms': { color: '#10b981', title: 'Rooms', icon: '🛏️' },
+    '/': { 
+      title: 'Dashboard', 
+      bgImage: '',
+      showButton: false,
+      buttonText: '',
+      action: null
+    },
+    '/patients': { 
+      title: 'Patients', 
+      bgImage: '/banner-patient.avif',
+      showButton: true,
+      buttonText: '+ Register Patient',
+      action: 'register'
+    },
+    '/appointments': { 
+      title: 'Appointments', 
+      bgImage: '/banner-appointment.avif',
+      showButton: true,
+      buttonText: '+ New Appointment',
+      action: 'appointment'
+    },
+    '/inpatients': { 
+      title: 'In-Patients', 
+      bgImage: '/banner-inpatient.jpg',
+      showButton: true,
+      buttonText: '+ New Admission',
+      action: 'admission'
+    },
+    '/outpatients': { 
+      title: 'Out-Patients', 
+      bgImage: '/banner-outpatient.avif',
+      showButton: true,
+      buttonText: '+ Record Visit',
+      action: 'visit'
+    },
+    '/billing': { 
+      title: 'Billing', 
+      bgImage: '/banner-billing.jpg',
+      showButton: true,
+      buttonText: '+ New Bill',
+      action: 'bill'
+    },
+    '/rooms': { 
+      title: 'Rooms', 
+      bgImage: '/banner-rooms.jpg',
+      showButton: true,
+      buttonText: '+ Add Room',
+      action: 'room'
+    },
   }
   
   const current = bannerData[location.pathname] || bannerData['/']
   
+  const handleButtonClick = () => {
+    switch (current.action) {
+      case 'register':
+        onRegisterPatient?.()
+        break
+      case 'appointment':
+        onNewAppointment?.()
+        break
+      case 'admission':
+        onNewAdmission?.()
+        break
+      case 'visit':
+        onRecordVisit?.()
+        break
+      case 'bill':
+        onNewBill?.()
+        break
+      case 'room':
+        onAddRoom?.()
+        break
+      default:
+        break
+    }
+  }
+
+  // Show button on desktop or when hovering over menu on mobile
+  const shouldShowButton = menuHovered || window.innerWidth >= 901
+  
   return (
     <div style={{
       width: '100%',
-      height: 160,
-      background: `linear-gradient(135deg, ${current.color}, ${current.color}dd)`,
+      height: '350px',
+      backgroundImage: `url('${current.bgImage}')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       borderBottom: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       flexShrink: 0,
       position: 'relative',
       overflow: 'hidden',
+      paddingLeft: '40px',
+      paddingRight: '40px',
     }}>
-      {/* Wave SVG background */}
-      <svg
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          opacity: 0.1,
-        }}
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,50 Q300,0 600,50 T1200,50 L1200,120 L0,120 Z"
-          fill="white"
-        />
-      </svg>
-      
-      {/* Content */}
+      {/* Overlay for better text contrast */}
       <div style={{
-        position: 'relative',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.4)',
+        zIndex: 1,
+      }}></div>
+      
+      {/* Left: Title */}
+      <h1 style={{
+        fontSize: '42px',
+        fontWeight: 700,
+        color: 'white',
+        margin: 0,
+        textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
         zIndex: 2,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 10,
+        position: 'relative',
       }}>
-        <div style={{
-          fontSize: 48,
-        }}>
-          {current.icon}
-        </div>
-        <h1 style={{
-          fontSize: 48,
-          fontWeight: 700,
-          color: 'white',
-          margin: 0,
-          textShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-        }}>
-          {current.title}
-        </h1>
-      </div>
+        {current.title}
+      </h1>
+      
+      {/* Right: Button */}
+      {current.showButton && shouldShowButton && (
+        <button
+          onClick={handleButtonClick}
+          style={{
+            zIndex: 2,
+            position: 'relative',
+            marginRight: '30px',
+            backgroundColor: 'white',
+            color: '#333',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '12px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            opacity: menuHovered && window.innerWidth < 901 ? 1 : 1,
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#f0f0f0'
+            e.target.style.transform = 'translateY(-2px)'
+            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'white'
+            e.target.style.transform = 'translateY(0)'
+            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
+          }}
+        >
+          {current.buttonText}
+        </button>
+      )}
     </div>
   )
 }

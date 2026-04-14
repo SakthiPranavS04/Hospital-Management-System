@@ -3,9 +3,8 @@ import { Plus, CalendarDays } from 'lucide-react'
 import { PageHeader, Btn, Card, Table, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
 import { appointments as initAppts, patients, doctors, doctorName, patientName } from '../data/mockData.js'
 
-export default function Appointments() {
+export default function Appointments({ appointmentModal, onAppointmentModalClose }) {
   const [appts, setAppts] = useState(initAppts)
-  const [modal, setModal] = useState(false)
   const [filter, setFilter] = useState('all')
   const [form, setForm] = useState({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
 
@@ -14,7 +13,7 @@ export default function Appointments() {
   const save = () => {
     if (!form.patientId || !form.doctorId || !form.date || !form.time) return
     setAppts(prev => [...prev, { ...form, id:Date.now(), patientId:+form.patientId, doctorId:+form.doctorId }])
-    setModal(false)
+    onAppointmentModalClose()
     setForm({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
   }
 
@@ -42,10 +41,6 @@ export default function Appointments() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
-        {/* Action Button */}
-        <div style={{ marginBottom:20 }}>
-          <Btn onClick={()=>setModal(true)} style={{ whiteSpace:'nowrap' }}><Plus size={14}/> New Appointment</Btn>
-        </div>
         {/* Filter tabs */}
         <div style={{ display:'flex', gap:6, marginBottom:18 }}>
           {Object.entries(counts).map(([key, count]) => (
@@ -68,7 +63,7 @@ export default function Appointments() {
           />
         </Card>
 
-        <Modal open={modal} onClose={()=>setModal(false)} title="New Appointment">
+        <Modal open={appointmentModal} onClose={onAppointmentModalClose} title="New Appointment">
           <FormGrid>
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
@@ -87,7 +82,7 @@ export default function Appointments() {
             <div style={{ gridColumn:'1/-1' }}><label>Reason</label><input value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} /></div>
           </FormGrid>
           <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-            <Btn variant="secondary" onClick={()=>setModal(false)}>Cancel</Btn>
+            <Btn variant="secondary" onClick={onAppointmentModalClose}>Cancel</Btn>
             <Btn onClick={save}>Schedule Appointment</Btn>
           </div>
         </Modal>

@@ -3,9 +3,8 @@ import { Plus, Receipt } from 'lucide-react'
 import { PageHeader, Btn, Card, Table, Modal, FormGrid, StatCard, statusBadge } from '../components/UI.jsx'
 import { bills as initBills, patients, admissions, outPatientVisits, patientName } from '../data/mockData.js'
 
-export default function Billing() {
+export default function Billing({ billingModal, onBillingModalClose }) {
   const [bills, setBills] = useState(initBills)
-  const [modal, setModal] = useState(false)
   const [payModal, setPayModal] = useState(null)
   const [form, setForm] = useState({ patientId:'', total:'', method:'Cash' })
   const [payAmt, setPayAmt] = useState('')
@@ -20,7 +19,7 @@ export default function Billing() {
       date:new Date().toISOString().split('T')[0],
       total:+form.total, paid:0, status:'Pending', method:form.method,
     }])
-    setModal(false)
+    onBillingModalClose()
     setForm({ patientId:'', total:'', method:'Cash' })
   }
 
@@ -55,11 +54,6 @@ export default function Billing() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
-        {/* Action Button */}
-        <div style={{ marginBottom:20 }}>
-          <Btn onClick={()=>setModal(true)} style={{ whiteSpace:'nowrap' }}><Plus size={14}/> New Bill</Btn>
-        </div>
-
         {/* Stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20, marginBottom:28 }}>
           <StatCard label="Total Collected"  value={`₹${totalRevenue.toLocaleString()}`}  icon={Receipt} color="var(--accent3)" />
@@ -76,7 +70,7 @@ export default function Billing() {
         </Card>
 
         {/* New bill modal */}
-        <Modal open={modal} onClose={()=>setModal(false)} title="Create New Bill">
+        <Modal open={billingModal} onClose={onBillingModalClose} title="Create New Bill">
           <FormGrid>
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
@@ -92,7 +86,7 @@ export default function Billing() {
             </div>
           </FormGrid>
           <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-            <Btn variant="secondary" onClick={()=>setModal(false)}>Cancel</Btn>
+            <Btn variant="secondary" onClick={onBillingModalClose}>Cancel</Btn>
             <Btn onClick={save}>Create Bill</Btn>
           </div>
         </Modal>

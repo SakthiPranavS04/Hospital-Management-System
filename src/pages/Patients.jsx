@@ -3,10 +3,9 @@ import { Plus, Search, User } from 'lucide-react'
 import { PageHeader, Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
 import { patients as initPatients } from '../data/mockData.js'
 
-export default function Patients() {
+export default function Patients({ patientModal, onPatientModalClose }) {
   const [patients, setPatients] = useState(initPatients)
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
 
   const filtered = patients.filter(p =>
@@ -16,7 +15,7 @@ export default function Patients() {
   const save = () => {
     if (!form.firstName || !form.lastName) return
     setPatients(prev => [...prev, { ...form, id: Date.now(), registeredAt: new Date().toISOString().split('T')[0] }])
-    setModal(false)
+    onPatientModalClose()
     setForm({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
   }
 
@@ -42,10 +41,6 @@ export default function Patients() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
-        {/* Action Button */}
-        <div style={{ marginBottom:20 }}>
-          <Btn onClick={() => setModal(true)} style={{ whiteSpace:'nowrap' }}><Plus size={14}/> Register Patient</Btn>
-        </div>
         <Card style={{ marginBottom:18 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg)', border:'1px solid var(--border)', borderRadius:9, padding:'8px 14px' }}>
             <Search size={14} color="var(--text3)" />
@@ -61,7 +56,7 @@ export default function Patients() {
           />
         </Card>
 
-        <Modal open={modal} onClose={()=>setModal(false)} title="Register New Patient">
+        <Modal open={patientModal} onClose={onPatientModalClose} title="Register New Patient">
           <FormGrid>
             <div><label>First Name *</label><input value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} /></div>
             <div><label>Last Name *</label><input value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} /></div>
@@ -81,7 +76,7 @@ export default function Patients() {
             <FullRow><label>Address</label><textarea value={form.address} onChange={e=>setForm({...form,address:e.target.value})} style={{ minHeight:60 }} /></FullRow>
           </FormGrid>
           <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-            <Btn variant="secondary" onClick={()=>setModal(false)}>Cancel</Btn>
+            <Btn variant="secondary" onClick={onPatientModalClose}>Cancel</Btn>
             <Btn onClick={save}>Register Patient</Btn>
           </div>
         </Modal>

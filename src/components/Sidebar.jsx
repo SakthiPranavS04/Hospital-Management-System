@@ -12,8 +12,9 @@ const links = [
   { to:'/rooms',       icon: Building2,       label:'Rooms' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onMenuHoverChange }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuHovered, setMenuHovered] = useState(false)
 
   return (
     <header style={{
@@ -57,9 +58,19 @@ export default function Sidebar() {
       {/* Mobile Menu Button */}
       <button 
         onClick={() => setMenuOpen(!menuOpen)}
+        onMouseEnter={() => {
+          setMenuHovered(true)
+          onMenuHoverChange?.(true)
+        }}
+        onMouseLeave={() => {
+          setMenuHovered(false)
+          onMenuHoverChange?.(false)
+        }}
         style={{
           display: 'none', background: 'transparent', border: 'none', 
-          cursor: 'pointer', color: 'var(--text)', padding: 8
+          cursor: 'pointer', color: 'var(--text)', padding: 8,
+          transition: 'all 0.2s ease',
+          opacity: menuHovered ? 1 : 0.7
         }}
         className="mobile-menu-btn"
       >

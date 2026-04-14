@@ -3,9 +3,8 @@ import { Plus, BedDouble } from 'lucide-react'
 import { PageHeader, Btn, Card, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
 import { admissions as initAdmissions, patients, doctors, rooms, doctorName, patientName, roomLabel } from '../data/mockData.js'
 
-export default function InPatients() {
+export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   const [admissions, setAdmissions] = useState(initAdmissions)
-  const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ patientId:'', doctorId:'', roomId:'', reason:'' })
 
   const save = () => {
@@ -16,7 +15,7 @@ export default function InPatients() {
       admissionDate:new Date().toISOString().split('T')[0],
       status:'Active', diagnosis:'Pending'
     }])
-    setModal(false)
+    onInpatientModalClose()
     setForm({ patientId:'', doctorId:'', roomId:'', reason:'' })
   }
 
@@ -43,10 +42,6 @@ export default function InPatients() {
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
-        {/* Action Button */}
-        <div style={{ marginBottom:20 }}>
-          <Btn onClick={()=>setModal(true)} style={{ whiteSpace:'nowrap' }}><Plus size={14}/> New Admission</Btn>
-        </div>
         {/* Quick stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20, marginBottom:28 }}>
           {[
@@ -69,7 +64,7 @@ export default function InPatients() {
           />
         </Card>
 
-        <Modal open={modal} onClose={()=>setModal(false)} title="New Admission">
+        <Modal open={inpatientModal} onClose={onInpatientModalClose} title="New Admission">
           <FormGrid>
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
@@ -92,7 +87,7 @@ export default function InPatients() {
             <FullRow><label>Reason for Admission</label><textarea value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} /></FullRow>
           </FormGrid>
           <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-            <Btn variant="secondary" onClick={()=>setModal(false)}>Cancel</Btn>
+            <Btn variant="secondary" onClick={onInpatientModalClose}>Cancel</Btn>
             <Btn onClick={save}>Admit Patient</Btn>
           </div>
         </Modal>
