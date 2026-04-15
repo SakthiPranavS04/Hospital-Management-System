@@ -1,3 +1,7 @@
+
+DROP DATABASE IF EXISTS hospital_db;
+CREATE DATABASE hospital_db;
+USE hospital_db;
 -- ============================================================
 --  HOSPITAL IN-PATIENT / OUT-PATIENT / APPOINTMENT MANAGEMENT
 --  MySQL Workbench Setup Script

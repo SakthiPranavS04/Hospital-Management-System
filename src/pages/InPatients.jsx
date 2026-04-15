@@ -41,7 +41,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
         {/* Quick stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20, marginBottom:28 }}>
           {[

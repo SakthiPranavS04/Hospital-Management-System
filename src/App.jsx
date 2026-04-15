@@ -21,7 +21,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh' }}>
+      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', width:'100%' }}>
         <Sidebar onMenuHoverChange={setMenuHovered} />
         <Banner 
           menuHovered={menuHovered}
@@ -32,7 +32,7 @@ export default function App() {
           onNewBill={() => setBillingModal(true)}
           onAddRoom={() => setRoomModal(true)}
         />
-        <main style={{ flex:1, overflowY:'auto', background:'var(--bg)' }}>
+        <main style={{ flex:1, overflowY:'auto', background:'var(--bg)', width:'100%', display:'flex', flexDirection:'column' }}>
           <Routes>
             <Route path="/"             element={<Dashboard />} />
             <Route path="/patients"     element={<Patients patientModal={patientModal} onPatientModalClose={() => setPatientModal(false)} />} />

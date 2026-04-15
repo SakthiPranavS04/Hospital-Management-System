@@ -40,7 +40,7 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40, position:'relative' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
         {/* Filter tabs */}
         <div style={{ display:'flex', gap:6, marginBottom:18 }}>
           {Object.entries(counts).map(([key, count]) => (

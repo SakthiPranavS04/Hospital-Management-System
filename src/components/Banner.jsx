@@ -1,12 +1,14 @@
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 
 export default function Banner({ menuHovered, onRegisterPatient, onNewAppointment, onNewAdmission, onRecordVisit, onNewBill, onAddRoom }) {
   const location = useLocation()
+  const navigate = useNavigate()
   
   const bannerData = {
     '/': { 
       title: 'Dashboard', 
-      bgImage: '',
+      bgImage: null,
       showButton: false,
       buttonText: '',
       action: null
@@ -89,7 +91,7 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
     <div style={{
       width: '100%',
       height: '350px',
-      backgroundImage: `url('${current.bgImage}')`,
+      backgroundImage: current.bgImage ? `url('${current.bgImage}')` : 'none',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -102,6 +104,7 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       overflow: 'hidden',
       paddingLeft: '40px',
       paddingRight: '40px',
+      zIndex: 2,
     }}>
       {/* Overlay for better text contrast */}
       <div style={{
@@ -113,6 +116,43 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
         background: 'rgba(0, 0, 0, 0.4)',
         zIndex: 1,
       }}></div>
+      
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '40px',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          color: '#1a1f36',
+          border: 'none',
+          borderRadius: '6px',
+          padding: '8px 12px',
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
+        }}
+      >
+        <ChevronLeft size={16} />
+        Back
+      </button>
       
       {/* Left: Title */}
       <h1 style={{
