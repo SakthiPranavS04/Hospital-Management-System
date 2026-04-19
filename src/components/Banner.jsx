@@ -4,61 +4,68 @@ import { ChevronLeft } from 'lucide-react'
 export default function Banner({ menuHovered, onRegisterPatient, onNewAppointment, onNewAdmission, onRecordVisit, onNewBill, onAddRoom }) {
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   const bannerData = {
-    '/': { 
-      title: 'Dashboard', 
-      bgImage: null,
+    '/': {
+      title: 'Dashboard',
+      bgImage: '/banner-dashboard.png',
       showButton: false,
       buttonText: '',
-      action: null
+      action: null,
+      showBackButton: false
     },
-    '/patients': { 
-      title: 'Patients', 
+    '/patients': {
+      title: 'Patients',
       bgImage: '/banner-patient.avif',
       showButton: true,
       buttonText: '+ Register Patient',
-      action: 'register'
+      action: 'register',
+      showBackButton: true
     },
-    '/appointments': { 
-      title: 'Appointments', 
+    '/appointments': {
+      title: 'Appointments',
       bgImage: '/banner-appointment.avif',
       showButton: true,
       buttonText: '+ New Appointment',
-      action: 'appointment'
+      action: 'appointment',
+      showBackButton: true
     },
-    '/inpatients': { 
-      title: 'In-Patients', 
+    '/inpatients': {
+      title: 'In-Patients',
       bgImage: '/banner-inpatient.jpg',
       showButton: true,
       buttonText: '+ New Admission',
-      action: 'admission'
+      action: 'admission',
+      showBackButton: true
     },
-    '/outpatients': { 
-      title: 'Out-Patients', 
+    '/outpatients': {
+      title: 'Out-Patients',
       bgImage: '/banner-outpatient.avif',
       showButton: true,
       buttonText: '+ Record Visit',
-      action: 'visit'
+      action: 'visit',
+      showBackButton: true
     },
-    '/billing': { 
-      title: 'Billing', 
+    '/billing': {
+      title: 'Billing',
       bgImage: '/banner-billing.jpg',
       showButton: true,
       buttonText: '+ New Bill',
-      action: 'bill'
+      action: 'bill',
+      showBackButton: true
     },
-    '/rooms': { 
-      title: 'Rooms', 
+    '/rooms': {
+      title: 'Rooms',
       bgImage: '/banner-rooms.jpg',
       showButton: true,
       buttonText: '+ Add Room',
-      action: 'room'
+      action: 'room',
+      showBackButton: true
     },
   }
-  
+
   const current = bannerData[location.pathname] || bannerData['/']
-  
+
   const handleButtonClick = () => {
     switch (current.action) {
       case 'register':
@@ -86,25 +93,25 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
 
   // Show button on desktop or when hovering over menu on mobile
   const shouldShowButton = menuHovered || window.innerWidth >= 901
-  
+
   return (
     <div style={{
       width: '100%',
-      height: '350px',
+      height: '300px',
       backgroundImage: current.bgImage ? `url('${current.bgImage}')` : 'none',
       backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      backgroundPosition: 'fit',
       backgroundRepeat: 'no-repeat',
       borderBottom: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       flexShrink: 0,
-      position: 'relative',
       overflow: 'hidden',
       paddingLeft: '40px',
       paddingRight: '40px',
-      zIndex: 2,
+      position: 'relative',
+      zIndex: 100,
     }}>
       {/* Overlay for better text contrast */}
       <div style={{
@@ -116,44 +123,45 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
         background: 'rgba(0, 0, 0, 0.4)',
         zIndex: 1,
       }}></div>
-      
+
       {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '40px',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          color: '#1a1f36',
-          border: 'none',
-          borderRadius: '6px',
-          padding: '8px 12px',
-          fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 1)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
-          e.currentTarget.style.transform = 'translateY(0)'
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
-        }}
-      >
-        <ChevronLeft size={16} />
-        Back
-      </button>
-      
+      {current.showBackButton !== false && (
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '40px',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            color: '#1a1f36',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '8px 12px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 1)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
+          }}
+        >
+          <ChevronLeft size={16} />
+          Back
+        </button>
+      )}
       {/* Left: Title */}
       <h1 style={{
         fontSize: '42px',
@@ -166,7 +174,7 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       }}>
         {current.title}
       </h1>
-      
+
       {/* Right: Button */}
       {current.showButton && shouldShowButton && (
         <button

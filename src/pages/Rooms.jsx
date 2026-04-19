@@ -24,7 +24,7 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
+    <div style={{ width:'100%', background:'var(--bg)' }}>
 
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>

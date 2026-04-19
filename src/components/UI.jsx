@@ -116,7 +116,7 @@ export function Modal({ open, onClose, title, children }) {
   return (
     <div style={{
       position:'fixed', inset:0, background:'rgba(0,0,0,.65)',
-      display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000,
+      display:'flex', alignItems:'center', justifyContent:'center', zIndex:10000,
     }} onClick={onClose}>
       <div style={{
         background:'var(--bg2)', border:'1px solid var(--border2)',
