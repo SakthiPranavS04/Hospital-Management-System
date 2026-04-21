@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, User } from 'lucide-react'
+import { Plus, Search, User, Trash2 } from 'lucide-react'
 import { Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
-import { getPatients, createPatient } from '../data/api.js'
+import { getPatients, createPatient, deletePatient } from '../data/api.js'
 
 export default function Patients({ patientModal, onPatientModalClose }) {
   const [patients, setPatients] = useState([])
@@ -78,6 +78,24 @@ export default function Patients({ patientModal, onPatientModalClose }) {
     }
   }
 
+  const remove = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove patient "${name}"?`)) return
+    try {
+      const result = await deletePatient(id)
+      if (result.success || result.message) {
+        console.log('✅ Patient deleted successfully')
+        alert('✅ Patient removed successfully!')
+        const res = await getPatients()
+        setPatients(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove patient')
+      }
+    } catch (err) {
+      console.error('❌ Error removing patient:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -120,6 +138,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
       p.contact_number || '—',
       p.email || '—',
       p.registered_at || '—',
+      <button onClick={() => remove(id, `${fName} ${lName}`)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove patient">-</button>,
     ]
   })
 
@@ -136,7 +155,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
 
         <Card>
           <Table
-            headers={['Patient','Date of Birth','Gender','Blood','Contact','Email','Registered']}
+            headers={['Patient','Date of Birth','Gender','Blood','Contact','Email','Registered','Remove']}
             rows={rows}
             emptyMsg="No patients found"
           />

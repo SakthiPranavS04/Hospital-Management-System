@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Receipt } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, StatCard, statusBadge } from '../components/UI.jsx'
-import { getBills, getPatients, getPatientName, createBill } from '../data/api.js'
+import { getBills, getPatients, getPatientName, createBill, deleteBill } from '../data/api.js'
 
 export default function Billing({ billingModal, onBillingModalClose }) {
   const [bills, setBills] = useState([])
@@ -85,6 +85,24 @@ export default function Billing({ billingModal, onBillingModalClose }) {
     }
   }
 
+  const remove = async (id, patientName) => {
+    if (!window.confirm(`Are you sure you want to remove this bill for ${patientName}?`)) return
+    try {
+      const result = await deleteBill(id)
+      if (result.success || result.message) {
+        console.log('✅ Bill deleted successfully')
+        alert('✅ Bill removed successfully!')
+        const res = await getBills()
+        setBills(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove bill')
+      }
+    } catch (err) {
+      console.error('❌ Error removing bill:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   const makePayment = () => {
     const amt = +payAmt
     if (!amt || !payModal) return
@@ -129,9 +147,10 @@ export default function Billing({ billingModal, onBillingModalClose }) {
     const billPaid = Number(b.paid_amount) || 0
     const billDate = b.bill_date || ''
     const billMethod = b.payment_method || '—'
+    const pName = getPatientName(patients, pId)
     return [
       `#${id}`,
-      getPatientName(patients, pId),
+      pName,
       billDate,
       `₹${billTotal.toLocaleString()}`,
       `₹${billPaid.toLocaleString()}`,
@@ -140,7 +159,8 @@ export default function Billing({ billingModal, onBillingModalClose }) {
       statusBadge(b.payment_status),
       b.payment_status !== 'Paid'
         ? <Btn size="sm" variant="secondary" onClick={() => { setPayModal(b); setPayAmt('') }}>Pay</Btn>
-        : <span style={{ fontSize:11, color:'var(--accent3)' }}>✓ Settled</span>
+        : <span style={{ fontSize:11, color:'var(--accent3)' }}>✓ Settled</span>,
+      <button onClick={() => remove(id, pName)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove bill">-</button>,
     ]
   })
 
@@ -163,7 +183,7 @@ export default function Billing({ billingModal, onBillingModalClose }) {
 
         <Card>
           <Table
-            headers={['Bill ID','Patient','Date','Total','Paid','Balance','Method','Status','Action']}
+            headers={['ID','Patient','Date','Total','Paid','Pending','Method','Status','Action','Remove']}
             rows={rows}
             emptyMsg="No bills found"
           />

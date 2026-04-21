@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, FullRow } from '../components/UI.jsx'
-import { getOutPatients, getPatients, getDoctors, getDoctorName, getPatientName, createOutPatientVisit } from '../data/api.js'
+import { getOutPatients, getPatients, getDoctors, getDoctorName, getPatientName, createOutPatientVisit, deleteOutPatientVisit } from '../data/api.js'
 
 export default function OutPatients({ outpatientModal, onOutpatientModalClose }) {
   const [visits, setVisits] = useState([])
@@ -90,6 +90,24 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
     }
   }
 
+  const remove = async (id, patientName) => {
+    if (!window.confirm(`Are you sure you want to remove this OPD visit for ${patientName}?`)) return
+    try {
+      const result = await deleteOutPatientVisit(id)
+      if (result.success || result.message) {
+        console.log('✅ OPD visit deleted successfully')
+        alert('✅ OPD visit removed successfully!')
+        const res = await getOutPatients()
+        setVisits(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove OPD visit')
+      }
+    } catch (err) {
+      console.error('❌ Error removing OPD visit:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -115,15 +133,17 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
     const dId = v.doctor_id
     const id = v.visit_id
     const date = v.visit_date || ''
+    const pName = getPatientName(patients, pId)
     return [
       `#${id}`,
-      getPatientName(patients, pId),
+      pName,
       getDoctorName(doctors, dId),
       date,
       v.chief_complaint || '—',
       v.diagnosis || '—',
       v.treatment_plan || '—',
       v.follow_up_date || '—',
+      <button onClick={() => remove(id, pName)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove OPD visit">-</button>,
     ]
   })
 
@@ -138,7 +158,7 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
         
         <Card>
           <Table
-            headers={['ID','Patient','Doctor','Visit Date','Chief Complaint','Diagnosis','Treatment','Follow-up']}
+            headers={['ID','Patient','Doctor','Visit Date','Chief Complaint','Diagnosis','Treatment','Follow-up','Remove']}
             rows={rows}
             emptyMsg="No OPD visits recorded"
           />

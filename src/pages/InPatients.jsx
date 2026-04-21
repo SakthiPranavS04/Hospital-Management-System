@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, BedDouble } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
-import { getAdmissions, getPatients, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel, createAdmission } from '../data/api.js'
+import { getAdmissions, getPatients, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel, createAdmission, deleteAdmission } from '../data/api.js'
 
 export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   const [admissions, setAdmissions] = useState([])
@@ -99,6 +99,24 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
 
   const discharge = id => setAdmissions(prev => prev.map(a => (a.id === id || a.admission_id === id) ? {...a, status:'Discharged', dischargeDate:new Date().toISOString().split('T')[0]} : a))
 
+  const remove = async (id, patientName) => {
+    if (!window.confirm(`Are you sure you want to remove this admission for ${patientName}?`)) return
+    try {
+      const result = await deleteAdmission(id)
+      if (result.success || result.message) {
+        console.log('✅ Admission deleted successfully')
+        alert('✅ Admission removed successfully!')
+        const res = await getAdmissions()
+        setAdmissions(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove admission')
+      }
+    } catch (err) {
+      console.error('❌ Error removing admission:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -126,9 +144,10 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
     const id = a.admission_id
     const admDate = a.admission_date || ''
     const dischDate = a.discharge_date || '—'
+    const pName = getPatientName(patients, pId)
     return [
       `#${id}`,
-      getPatientName(patients, pId),
+      pName,
       getDoctorName(doctors, dId),
       getRoomLabel(rooms, rId),
       admDate,
@@ -138,7 +157,8 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
       statusBadge(a.status),
       a.status === 'Active'
         ? <Btn size="sm" variant="secondary" onClick={() => discharge(id)}>Discharge</Btn>
-        : null
+        : null,
+      <button onClick={() => remove(id, pName)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove admission">-</button>,
     ]
   })
 
@@ -169,7 +189,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
 
         <Card>
           <Table
-            headers={['ID','Patient','Doctor','Room','Admitted','Discharged','Reason','Diagnosis','Status','Action']}
+            headers={['ID','Patient','Doctor','Room','Admitted','Discharged','Reason','Diagnosis','Status','Action','Remove']}
             rows={rows}
             emptyMsg="No admissions found"
           />

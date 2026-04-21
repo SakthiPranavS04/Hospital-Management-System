@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, CalendarDays } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
-import { getAppointments, getPatients, getDoctors, getDoctorName, getPatientName, createAppointment } from '../data/api.js'
+import { getAppointments, getPatients, getDoctors, getDoctorName, getPatientName, createAppointment, deleteAppointment } from '../data/api.js'
 
 export default function Appointments({ appointmentModal, onAppointmentModalClose }) {
   const [appts, setAppts] = useState([])
@@ -86,6 +86,24 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
 
   const updateStatus = (id, status) => setAppts(prev => prev.map(a => a.appointment_id === id ? {...a, status} : a))
 
+  const remove = async (id, patientName) => {
+    if (!window.confirm(`Are you sure you want to remove this appointment for ${patientName}?`)) return
+    try {
+      const result = await deleteAppointment(id)
+      if (result.success || result.message) {
+        console.log('✅ Appointment deleted successfully')
+        alert('✅ Appointment removed successfully!')
+        const res = await getAppointments()
+        setAppts(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove appointment')
+      }
+    } catch (err) {
+      console.error('❌ Error removing appointment:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -111,9 +129,10 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
     const dId = a.doctor_id
     const date = a.appointment_date || ''
     const id = a.appointment_id
+    const pName = getPatientName(patients, pId)
     return [
       `#${id}`,
-      getPatientName(patients, pId),
+      pName,
       getDoctorName(doctors, dId),
       date,
       a.appointment_time || '—',
@@ -124,7 +143,8 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
           <Btn size="sm" variant="secondary" onClick={() => updateStatus(id, 'Completed')}>✓</Btn>
           <Btn size="sm" variant="danger" onClick={() => updateStatus(id, 'Cancelled')}>✕</Btn>
         </>}
-      </div>
+      </div>,
+      <button onClick={() => remove(id, pName)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove appointment">-</button>,
     ]
   })
 
@@ -160,7 +180,7 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
 
         <Card>
           <Table
-            headers={['ID','Patient','Doctor','Date','Time','Reason','Status','Actions']}
+            headers={['ID','Patient','Doctor','Date','Time','Reason','Status','Actions','Remove']}
             rows={rows}
             emptyMsg="No appointments found"
           />

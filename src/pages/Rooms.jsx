@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Building2 } from 'lucide-react'
 import { Card, Btn, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
-import { getRooms, getAdmissions, getPatients, getDoctors, getDoctorName, getPatientName, createRoom } from '../data/api.js'
+import { getRooms, getAdmissions, getPatients, getDoctors, getDoctorName, getPatientName, createRoom, deleteRoom } from '../data/api.js'
 
 export default function Rooms({ roomModal, onRoomModalClose }) {
   const [rooms, setRooms] = useState([])
@@ -101,6 +101,24 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
     }
   }
 
+  const remove = async (id, roomNumber) => {
+    if (!window.confirm(`Are you sure you want to remove room ${roomNumber}?`)) return
+    try {
+      const result = await deleteRoom(id)
+      if (result.success || result.message) {
+        console.log('✅ Room deleted successfully')
+        alert('✅ Room removed successfully!')
+        const res = await getRooms()
+        setRooms(res.data || res || [])
+      } else {
+        alert('❌ Failed to remove room')
+      }
+    } catch (err) {
+      console.error('❌ Error removing room:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -169,11 +187,12 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
                     <div style={{ fontWeight:700, fontSize:'clamp(16px, 4vw, 18px)', color:'var(--text)' }}>{r.room_number}</div>
                     <div style={{ fontSize:'clamp(10px, 2vw, 11px)', color:'var(--text3)', marginTop:3 }}>Floor {r.floor}</div>
                   </div>
-                  <div style={{ textAlign:'right' }}>
+                  <div style={{ textAlign:'right', display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
                     <span style={{ display:'inline-block', padding:'3px 10px', borderRadius:20, fontSize:'clamp(10px, 1.5vw, 11px)', fontWeight:600,
                       background: `${typeColor[r.room_type] || 'var(--accent)'}20`, color: typeColor[r.room_type] || 'var(--accent)' }}>
                       {r.room_type}
                     </span>
+                    <button onClick={() => remove(r.room_id, r.room_number)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:16, padding:0 }} title="Remove room">-</button>
                   </div>
                 </div>
 
