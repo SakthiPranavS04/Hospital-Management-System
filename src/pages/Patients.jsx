@@ -1,41 +1,127 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, User } from 'lucide-react'
-import { PageHeader, Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
-import { patients as initPatients } from '../data/mockData.js'
+import { Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
+import { getPatients, createPatient } from '../data/api.js'
 
 export default function Patients({ patientModal, onPatientModalClose }) {
-  const [patients, setPatients] = useState(initPatients)
+  const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const filtered = patients.filter(p =>
-    `${p.firstName} ${p.lastName} ${p.contact} ${p.email}`.toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const res = await getPatients()
+        if (res.error) throw new Error(res.error)
+        setPatients(res.data || [])
+        setError(null)
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching patients:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const save = () => {
-    if (!form.firstName || !form.lastName) return
-    setPatients(prev => [...prev, { ...form, id: Date.now(), registeredAt: new Date().toISOString().split('T')[0] }])
-    onPatientModalClose()
-    setForm({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
+    fetchData()
+  }, [])
+
+  const filtered = patients.filter(p => {
+    const fName = p.first_name || ''
+    const lName = p.last_name || ''
+    const contact = p.contact_number || ''
+    const email = p.email || ''
+    return `${fName} ${lName} ${contact} ${email}`.toLowerCase().includes(search.toLowerCase())
+  })
+
+  const save = async () => {
+    if (!form.firstName || !form.lastName) {
+      alert('Please enter First Name and Last Name')
+      return
+    }
+    try {
+      const patientData = {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        date_of_birth: form.dob,
+        gender: form.gender,
+        blood_type: form.blood,
+        contact: form.contact,
+        email: form.email,
+        address: form.address
+      }
+      console.log('📤 Sending patient data:', patientData)
+      const result = await createPatient(patientData)
+      console.log('📥 Response from server:', result)
+      
+      if (result.success || result.id) {
+        console.log('✅ Patient created successfully with ID:', result.id)
+        alert(`✅ Patient registered successfully!`)
+        const res = await getPatients()
+        console.log('📋 Updated patient list:', res)
+        setPatients(res.data || res || [])
+        onPatientModalClose()
+        setForm({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
+      } else if (result.error) {
+        console.error('❌ Server error:', result.error)
+        alert(`❌ Error: ${result.error}`)
+      } else {
+        console.error('❌ Unexpected response:', result)
+        alert('❌ Failed to register patient')
+      }
+    } catch (err) {
+      console.error('❌ Error saving patient:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
   }
 
-  const rows = filtered.map(p => [
-    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-      <div style={{ width:32, height:32, borderRadius:8, background:'rgba(79,142,247,.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <User size={14} color="var(--accent)" />
+  if (loading) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--text2)' }}>Loading patients...</p>
+        </div>
       </div>
-      <div>
-        <div style={{ fontWeight:600 }}>{p.firstName} {p.lastName}</div>
-        <div style={{ fontSize:11, color:'var(--text3)' }}>ID #{p.id}</div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--red)' }}>Error loading patients: {error}</p>
+        </div>
       </div>
-    </div>,
-    <>{p.dob} <span style={{ color:'var(--text3)', fontSize:11 }}>({new Date().getFullYear()-new Date(p.dob).getFullYear()} yrs)</span></>,
-    p.gender,
-    <Badge type="info">{p.blood}</Badge>,
-    p.contact,
-    p.email,
-    p.registeredAt,
-  ])
+    )
+  }
+
+  const rows = filtered.map(p => {
+    const fName = p.first_name || ''
+    const lName = p.last_name || ''
+    const dob = p.date_of_birth || ''
+    const id = p.patient_id
+    const age = dob ? new Date().getFullYear() - new Date(dob).getFullYear() : 0
+    return [
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ width:32, height:32, borderRadius:8, background:'rgba(79,142,247,.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <User size={14} color="var(--accent)" />
+        </div>
+        <div>
+          <div style={{ fontWeight:600 }}>{fName} {lName}</div>
+          <div style={{ fontSize:11, color:'var(--text3)' }}>ID #{id}</div>
+        </div>
+      </div>,
+      <>{dob} <span style={{ color:'var(--text3)', fontSize:11 }}>({age} yrs)</span></>,
+      p.gender || '—',
+      <Badge type="info">{p.blood_group || '—'}</Badge>,
+      p.contact_number || '—',
+      p.email || '—',
+      p.registered_at || '—',
+    ]
+  })
 
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>

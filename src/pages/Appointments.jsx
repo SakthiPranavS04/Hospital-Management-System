@@ -1,46 +1,149 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, CalendarDays } from 'lucide-react'
-import { PageHeader, Btn, Card, Table, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
-import { appointments as initAppts, patients, doctors, doctorName, patientName } from '../data/mockData.js'
+import { Btn, Card, Table, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
+import { getAppointments, getPatients, getDoctors, getDoctorName, getPatientName, createAppointment } from '../data/api.js'
 
 export default function Appointments({ appointmentModal, onAppointmentModalClose }) {
-  const [appts, setAppts] = useState(initAppts)
+  const [appts, setAppts] = useState([])
+  const [patients, setPatients] = useState([])
+  const [doctors, setDoctors] = useState([])
   const [filter, setFilter] = useState('all')
   const [form, setForm] = useState({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const filtered = filter==='all' ? appts : appts.filter(a=>a.status===filter)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [apptRes, patientRes, doctorRes] = await Promise.all([getAppointments(), getPatients(), getDoctors()])
+        if (apptRes.error) throw new Error(apptRes.error)
+        if (patientRes.error) throw new Error(patientRes.error)
+        if (doctorRes.error) throw new Error(doctorRes.error)
+        setAppts(apptRes.data || [])
+        setPatients(patientRes.data || [])
+        setDoctors(doctorRes.data || [])
+        setError(null)
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching appointments:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const save = () => {
+    fetchData()
+  }, [])
+
+  const filtered = filter === 'all' ? appts : appts.filter(a => (a.status === filter))
+
+  const save = async () => {
     if (!form.patientId || !form.doctorId || !form.date || !form.time) return
-    setAppts(prev => [...prev, { ...form, id:Date.now(), patientId:+form.patientId, doctorId:+form.doctorId }])
-    onAppointmentModalClose()
-    setForm({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
+    try {
+      const appointmentData = {
+        patient_id: +form.patientId,
+        doctor_id: +form.doctorId,
+        appointment_date: form.date,
+        appointment_time: form.time,
+        reason: form.reason,
+        status: form.status
+      }
+      const result = await createAppointment(appointmentData)
+      if (result.success || result.id) {
+        const res = await getAppointments()
+        setAppts(res || [])
+        onAppointmentModalClose()
+        setForm({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
+      }
+    } catch (err) {
+      console.error('Error saving appointment:', err)
+    }
   }
 
-  const updateStatus = (id, status) => setAppts(prev => prev.map(a => a.id===id ? {...a, status} : a))
+  const refreshData = async () => {
+    try {
+      console.log('🔄 Refreshing data...')
+      const [apptRes, patientRes, doctorRes] = await Promise.all([getAppointments(), getPatients(), getDoctors()])
+      console.log('📥 Appointments response:', apptRes)
+      console.log('📥 Patients response:', patientRes)
+      console.log('📥 Doctors response:', doctorRes)
+      
+      const apptData = apptRes?.data || apptRes || []
+      const patientData = patientRes?.data || patientRes || []
+      const doctorData = doctorRes?.data || doctorRes || []
+      
+      console.log('✅ Extracted data - Appointments:', apptData.length, 'Patients:', patientData.length, 'Doctors:', doctorData.length)
+      
+      setAppts(apptData)
+      setPatients(patientData)
+      setDoctors(doctorData)
+      alert('✅ Data refreshed! New patients are now available.')
+    } catch (err) {
+      console.error('❌ Error refreshing data:', err)
+      alert('❌ Error refreshing data: ' + err.message)
+    }
+  }
 
-  const rows = filtered.map(a => [
-    `#${a.id}`,
-    patientName(a.patientId),
-    doctorName(a.doctorId),
-    a.date,
-    a.time,
-    a.reason || '—',
-    statusBadge(a.status),
-    <div style={{ display:'flex', gap:6 }}>
-      {a.status==='Scheduled' && <>
-        <Btn size="sm" variant="secondary" onClick={()=>updateStatus(a.id,'Completed')}>✓</Btn>
-        <Btn size="sm" variant="danger"    onClick={()=>updateStatus(a.id,'Cancelled')}>✕</Btn>
-      </>}
-    </div>
-  ])
+  const updateStatus = (id, status) => setAppts(prev => prev.map(a => a.appointment_id === id ? {...a, status} : a))
 
-  const counts = { all:appts.length, Scheduled:appts.filter(x=>x.status==='Scheduled').length, Completed:appts.filter(x=>x.status==='Completed').length, Cancelled:appts.filter(x=>x.status==='Cancelled').length }
+  if (loading) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--text2)' }}>Loading appointments...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--red)' }}>Error loading appointments: {error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const rows = filtered.map(a => {
+    const pId = a.patient_id
+    const dId = a.doctor_id
+    const date = a.appointment_date || ''
+    const id = a.appointment_id
+    return [
+      `#${id}`,
+      getPatientName(patients, pId),
+      getDoctorName(doctors, dId),
+      date,
+      a.appointment_time || '—',
+      a.reason || '—',
+      statusBadge(a.status),
+      <div style={{ display:'flex', gap:6 }}>
+        {a.status === 'Scheduled' && <>
+          <Btn size="sm" variant="secondary" onClick={() => updateStatus(id, 'Completed')}>✓</Btn>
+          <Btn size="sm" variant="danger" onClick={() => updateStatus(id, 'Cancelled')}>✕</Btn>
+        </>}
+      </div>
+    ]
+  })
+
+  const counts = {
+    all: appts.length,
+    Scheduled: appts.filter(x => x.status === 'Scheduled').length,
+    Completed: appts.filter(x => x.status === 'Completed').length,
+    Cancelled: appts.filter(x => x.status === 'Cancelled').length
+  }
 
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        {/* Refresh Button */}
+        <div style={{ marginBottom:18 }}>
+          <Btn onClick={refreshData} variant="secondary" size="sm">🔄 Refresh Patient List</Btn>
+        </div>
+        
         {/* Filter tabs */}
         <div style={{ display:'flex', gap:6, marginBottom:18 }}>
           {Object.entries(counts).map(([key, count]) => (
@@ -68,15 +171,10 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
                 <option value="">Select patient</option>
-                {patients.map(p=><option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>)}
+                {patients.map(p=>{const fName = p.firstName || p.first_name; const lName = p.lastName || p.last_name; const id = p.id || p.patient_id; return <option key={id} value={id}>{fName} {lName}</option>})}
               </select>
             </div>
-            <div><label>Doctor *</label>
-              <select value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})}>
-                <option value="">Select doctor</option>
-                {doctors.map(d=><option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName} ({d.spec})</option>)}
-              </select>
-            </div>
+            <div><label>Doctor ID *</label><input type="number" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} placeholder="Enter doctor ID" /></div>
             <div><label>Date *</label><input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} /></div>
             <div><label>Time *</label><input type="time" value={form.time} onChange={e=>setForm({...form,time:e.target.value})} /></div>
             <div style={{ gridColumn:'1/-1' }}><label>Reason</label><input value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} /></div>

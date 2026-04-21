@@ -1,9 +1,14 @@
 USE hospital_db;
+SHOW TABLES;
 SELECT * FROM patient;
 SELECT * FROM doctor;
 SELECT * FROM appointment;
 SELECT * FROM room;
+SELECT * FROM prescription;
 SELECT * FROM outpatientvisit;
 SELECT * FROM nurse;
-SELECT * FROM bill;
+SELECT * FROM nurseadmissionassignment;
+SELECT * FROM medicalrecord;
 SELECT * FROM department;
+SELECT * FROM bill;
+SELECT * FROM patient WHERE first_name = 'TestUser';

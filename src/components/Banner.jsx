@@ -97,10 +97,10 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
   return (
     <div style={{
       width: '100%',
-      height: '300px',
+      height: '350px',
       backgroundImage: current.bgImage ? `url('${current.bgImage}')` : 'none',
-      backgroundSize: 'cover',
-      backgroundPosition: 'fit',
+      backgroundSize: '100% 100%',
+      backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
       borderBottom: '1px solid var(--border)',
       display: 'flex',
@@ -110,8 +110,8 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       overflow: 'hidden',
       paddingLeft: '40px',
       paddingRight: '40px',
+      flexDirection: 'row',
       position: 'relative',
-      zIndex: 100,
     }}>
       {/* Overlay for better text contrast */}
       <div style={{
@@ -122,6 +122,7 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
         bottom: 0,
         background: 'rgba(0, 0, 0, 0.4)',
         zIndex: 1,
+        pointerEvents: 'none',
       }}></div>
 
       {/* Back Button */}

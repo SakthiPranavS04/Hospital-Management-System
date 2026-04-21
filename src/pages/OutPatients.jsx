@@ -1,38 +1,141 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
-import { PageHeader, Btn, Card, Table, Modal, FormGrid, FullRow } from '../components/UI.jsx'
-import { outPatientVisits as initVisits, patients, doctors, appointments, doctorName, patientName } from '../data/mockData.js'
+import { Btn, Card, Table, Modal, FormGrid, FullRow } from '../components/UI.jsx'
+import { getOutPatients, getPatients, getDoctors, getDoctorName, getPatientName, createOutPatientVisit } from '../data/api.js'
 
 export default function OutPatients({ outpatientModal, onOutpatientModalClose }) {
-  const [visits, setVisits] = useState(initVisits)
+  const [visits, setVisits] = useState([])
+  const [patients, setPatients] = useState([])
+  const [doctors, setDoctors] = useState([])
   const [form, setForm] = useState({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const save = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [visRes, patientRes, doctorRes] = await Promise.all([
+          getOutPatients(),
+          getPatients(),
+          getDoctors(),
+        ])
+        if (visRes.error) throw new Error(visRes.error)
+        if (patientRes.error) throw new Error(patientRes.error)
+        if (doctorRes.error) throw new Error(doctorRes.error)
+        setVisits(visRes.data || [])
+        setPatients(patientRes.data || [])
+        setDoctors(doctorRes.data || [])
+        setError(null)
+      } catch (err) {
+        setError(err.message)
+        console.error('Error fetching outpatient data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const save = async () => {
     if (!form.patientId || !form.doctorId) return
-    setVisits(prev => [...prev, {
-      ...form, id:Date.now(),
-      patientId:+form.patientId, doctorId:+form.doctorId,
-      date:new Date().toISOString().split('T')[0],
-    }])
-    onOutpatientModalClose()
-    setForm({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
+    try {
+      const visitData = {
+        patient_id: +form.patientId,
+        doctor_id: +form.doctorId,
+        visit_date: new Date().toISOString().split('T')[0],
+        chief_complaint: form.complaint,
+        diagnosis: form.diagnosis,
+        treatment_plan: form.treatment,
+        follow_up_date: form.followUp
+      }
+      const result = await createOutPatientVisit(visitData)
+      if (result.success || result.id) {
+        const res = await getOutPatients()
+        setVisits(res || [])
+        onOutpatientModalClose()
+        setForm({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
+      }
+    } catch (err) {
+      console.error('Error saving visit:', err)
+    }
   }
 
-  const rows = visits.map(v => [
-    `#${v.id}`,
-    patientName(v.patientId),
-    doctorName(v.doctorId),
-    v.date,
-    v.complaint || '—',
-    v.diagnosis || '—',
-    v.treatment || '—',
-    v.followUp || '—',
-  ])
+  const refreshData = async () => {
+    try {
+      console.log('🔄 Refreshing data...')
+      const [visRes, patientRes, doctorRes] = await Promise.all([
+        getOutPatients(),
+        getPatients(),
+        getDoctors(),
+      ])
+      console.log('📥 Visits response:', visRes)
+      console.log('📥 Patients response:', patientRes)
+      console.log('📥 Doctors response:', doctorRes)
+      
+      const visData = visRes?.data || visRes || []
+      const patientData = patientRes?.data || patientRes || []
+      const doctorData = doctorRes?.data || doctorRes || []
+      
+      console.log('✅ Extracted data - Visits:', visData.length, 'Patients:', patientData.length, 'Doctors:', doctorData.length)
+      
+      setVisits(visData)
+      setPatients(patientData)
+      setDoctors(doctorData)
+      alert('✅ Data refreshed! New patients are now available.')
+    } catch (err) {
+      console.error('❌ Error refreshing data:', err)
+      alert('❌ Error refreshing data: ' + err.message)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--text2)' }}>Loading outpatient visits...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ width:'100%', background:'var(--bg)' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+          <p style={{ fontSize:16, color:'var(--red)' }}>Error loading outpatient visits: {error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const rows = visits.map(v => {
+    const pId = v.patient_id
+    const dId = v.doctor_id
+    const id = v.visit_id
+    const date = v.visit_date || ''
+    return [
+      `#${id}`,
+      getPatientName(patients, pId),
+      getDoctorName(doctors, dId),
+      date,
+      v.chief_complaint || '—',
+      v.diagnosis || '—',
+      v.treatment_plan || '—',
+      v.follow_up_date || '—',
+    ]
+  })
 
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
       {/* Content Container */}
       <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        {/* Refresh Button */}
+        <div style={{ marginBottom:18 }}>
+          <Btn onClick={refreshData} variant="secondary" size="sm">🔄 Refresh Patient List</Btn>
+        </div>
+        
         <Card>
           <Table
             headers={['ID','Patient','Doctor','Visit Date','Chief Complaint','Diagnosis','Treatment','Follow-up']}
@@ -46,15 +149,10 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
             <div><label>Patient *</label>
               <select value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}>
                 <option value="">Select patient</option>
-                {patients.map(p=><option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>)}
+                {patients.map(p=>{const fName = p.firstName || p.first_name; const lName = p.lastName || p.last_name; const id = p.id || p.patient_id; return <option key={id} value={id}>{fName} {lName}</option>})}
               </select>
             </div>
-            <div><label>Doctor *</label>
-              <select value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})}>
-                <option value="">Select doctor</option>
-                {doctors.map(d=><option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName} ({d.spec})</option>)}
-              </select>
-            </div>
+            <div><label>Doctor ID *</label><input type="number" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} placeholder="Enter doctor ID" /></div>
             <FullRow><label>Chief Complaint</label><input value={form.complaint} onChange={e=>setForm({...form,complaint:e.target.value})} /></FullRow>
             <FullRow><label>Diagnosis</label><textarea value={form.diagnosis} onChange={e=>setForm({...form,diagnosis:e.target.value})} style={{ minHeight:60 }} /></FullRow>
             <FullRow><label>Treatment Plan</label><textarea value={form.treatment} onChange={e=>setForm({...form,treatment:e.target.value})} style={{ minHeight:60 }} /></FullRow>

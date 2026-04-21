@@ -20,19 +20,19 @@ export default function App() {
   const [menuHovered, setMenuHovered] = useState(false)
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', width:'100%', overflow:'hidden' }}>
         <Sidebar onMenuHoverChange={setMenuHovered} />
-        <Banner 
-          menuHovered={menuHovered}
-          onRegisterPatient={() => setPatientModal(true)}
-          onNewAppointment={() => setAppointmentModal(true)}
-          onNewAdmission={() => setInpatientModal(true)}
-          onRecordVisit={() => setOutpatientModal(true)}
-          onNewBill={() => setBillingModal(true)}
-          onAddRoom={() => setRoomModal(true)}
-        />
-        <main style={{ flex:1, overflowY:'auto', background:'var(--bg)', width:'100%' }}>
+        <main style={{ flex:1, overflowY:'auto', overflowX:'hidden', background:'var(--bg)', width:'100%', display:'flex', flexDirection:'column' }}>
+          <Banner 
+            menuHovered={menuHovered}
+            onRegisterPatient={() => setPatientModal(true)}
+            onNewAppointment={() => setAppointmentModal(true)}
+            onNewAdmission={() => setInpatientModal(true)}
+            onRecordVisit={() => setOutpatientModal(true)}
+            onNewBill={() => setBillingModal(true)}
+            onAddRoom={() => setRoomModal(true)}
+          />
           <Routes>
             <Route path="/"             element={<Dashboard />} />
             <Route path="/patients"     element={<Patients patientModal={patientModal} onPatientModalClose={() => setPatientModal(false)} />} />
