@@ -1,364 +1,504 @@
 import express from "express";
-import mysql from "mysql2";
+import pkg from "pg";
 import cors from "cors";
+import dotenv from "dotenv";
 
+dotenv.config();
+
+const { Pool } = pkg;
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Sakthi@2004",
-  database: "hospital_db"
+// ── PostgreSQL connection via DATABASE_URL (from .env or Supabase/Vercel env vars)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes("supabase") || process.env.NODE_ENV === "production"
+    ? { rejectUnauthorized: false }
+    : false,
 });
 
-db.connect(err => {
-  if (err) {
-    console.log("DB Connection Failed:", err);
-  } else {
-    console.log("Connected to MySQL");
+pool.connect()
+  .then(() => console.log("✅ Connected to PostgreSQL (Supabase)"))
+  .catch(err => console.error("❌ DB Connection Failed:", err.message));
+
+// ── Helper: run a query and return rows
+const query = (text, params) => pool.query(text, params);
+
+// ============================================================
+// PATIENTS
+// ============================================================
+app.get("/patients", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        p.patient_id,
+        p.first_name,
+        p.last_name,
+        p.date_of_birth,
+        p.gender,
+        p.blood_group,
+        p.contact_number,
+        p.email,
+        p.address,
+        p.registered_at,
+        COUNT(DISTINCT a.admission_id)    AS total_admissions,
+        COUNT(DISTINCT ov.visit_id)       AS total_visits,
+        COUNT(DISTINCT b.bill_id)         AS total_bills
+      FROM patient p
+      LEFT JOIN admission       a  ON a.patient_id  = p.patient_id
+      LEFT JOIN outpatientvisit ov ON ov.patient_id = p.patient_id
+      LEFT JOIN bill            b  ON b.patient_id  = p.patient_id
+      GROUP BY p.patient_id
+      ORDER BY p.registered_at DESC
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/patients", (req, res) => {
-  db.query("SELECT patient_id, first_name, last_name, date_of_birth, gender, blood_group, contact_number, email, address, registered_at FROM patient", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/patients", (req, res) => {
-  console.log('📝 POST /patients received - Body:', req.body);
+app.post("/patients", async (req, res) => {
   const { first_name, last_name, date_of_birth, gender, blood_type, contact, email, address } = req.body;
-  
-  if (!first_name || !last_name) {
-    console.log('❌ Missing required fields: first_name or last_name');
+  if (!first_name || !last_name)
     return res.status(400).json({ error: "first_name and last_name are required" });
+  try {
+    const { rows } = await query(
+      "INSERT INTO patient (first_name, last_name, date_of_birth, gender, blood_group, contact_number, email, address) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING patient_id",
+      [first_name, last_name, date_of_birth, gender, blood_type, contact, email, address]
+    );
+    res.json({ success: true, id: rows[0].patient_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  
-  console.log('🔄 Inserting patient:', { first_name, last_name, date_of_birth, gender, blood_type, contact, email, address });
-  
-  db.query(
-    "INSERT INTO patient (first_name, last_name, date_of_birth, gender, blood_group, contact_number, email, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    [first_name, last_name, date_of_birth, gender, blood_type, contact, email, address],
-    (err, result) => {
-      if (err) {
-        console.log('❌ Database error:', err.message);
-        return res.status(500).json({ error: err.message });
-      }
-      console.log('✅ Patient created successfully with ID:', result.insertId);
-      res.json({ success: true, id: result.insertId });
-    }
-  );
 });
 
-app.get("/appointments", (req, res) => {
-  db.query("SELECT appointment_id, patient_id, doctor_id, appointment_date, appointment_time, reason, status FROM appointment", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/appointments", (req, res) => {
-  const { patient_id, doctor_id, appointment_date, appointment_time, reason, status } = req.body;
-  db.query(
-    "INSERT INTO appointment (patient_id, doctor_id, appointment_date, appointment_time, reason, status) VALUES (?, ?, ?, ?, ?, ?)",
-    [patient_id, doctor_id, appointment_date, appointment_time, reason, status],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-app.get("/admissions", (req, res) => {
-  db.query("SELECT admission_id, patient_id, doctor_id, room_id, admission_date, discharge_date, reason, diagnosis, status FROM admission", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/admissions", (req, res) => {
-  const { patient_id, doctor_id, room_id, reason, admission_date, status } = req.body;
-  db.query(
-    "INSERT INTO admission (patient_id, doctor_id, room_id, reason, admission_date, status) VALUES (?, ?, ?, ?, ?, ?)",
-    [patient_id, doctor_id, room_id, reason, admission_date, status || 'Active'],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      // Mark room as unavailable
-      db.query(
-        "UPDATE room SET is_available = FALSE WHERE room_id = ?",
-        [room_id],
-        (updateErr) => {
-          if (updateErr) console.error('Room update error:', updateErr);
-        }
-      );
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-app.get("/outpatients", (req, res) => {
-  db.query("SELECT visit_id, patient_id, doctor_id, appointment_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date FROM outpatientvisit", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/outpatients", (req, res) => {
-  const { patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date } = req.body;
-  db.query(
-    "INSERT INTO outpatientvisit (patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-app.get("/billing", (req, res) => {
-  db.query("SELECT bill_id, patient_id, admission_id, visit_id, bill_date, total_amount, paid_amount, payment_status, payment_method FROM bill", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/billing", (req, res) => {
-  const { patient_id, total, bill_date, status, payment_method } = req.body;
-  db.query(
-    "INSERT INTO bill (patient_id, total_amount, bill_date, payment_status, payment_method) VALUES (?, ?, ?, ?, ?)",
-    [patient_id, total, bill_date, status || 'Pending', payment_method],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-app.get("/rooms", (req, res) => {
-  db.query("SELECT room_id, room_number, room_type, floor, is_available, department_id FROM room", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.get("/doctors", (req, res) => {
-  db.query("SELECT doctor_id, first_name, last_name, specialization, qualification, contact_number, email, department_id FROM doctor", (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ data: result });
-  });
-});
-
-app.post("/rooms", (req, res) => {
-  const { room_number, floor, room_type, department_id, is_available } = req.body;
-  db.query(
-    "INSERT INTO room (room_number, floor, room_type, is_available, department_id) VALUES (?, ?, ?, ?, ?)",
-    [room_number, floor, room_type, is_available !== false, department_id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-// ============ UPDATE ENDPOINTS ============
-
-// UPDATE Patient
-app.put("/patients/:id", (req, res) => {
+app.put("/patients/:id", async (req, res) => {
   const { id } = req.params;
   const { first_name, last_name, date_of_birth, gender, blood_type, contact, email, address } = req.body;
-  
-  db.query(
-    "UPDATE patient SET first_name=?, last_name=?, date_of_birth=?, gender=?, blood_group=?, contact_number=?, email=?, address=? WHERE patient_id=?",
-    [first_name, last_name, date_of_birth, gender, blood_type, contact, email, address, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Patient updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE patient SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_group=$5, contact_number=$6, email=$7, address=$8 WHERE patient_id=$9",
+      [first_name, last_name, date_of_birth, gender, blood_type, contact, email, address, id]
+    );
+    res.json({ success: true, message: "Patient updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// UPDATE Appointment
-app.put("/appointments/:id", (req, res) => {
+app.delete("/patients/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await query("DELETE FROM patient WHERE patient_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Patient not found" });
+    res.json({ success: true, message: "Patient deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// APPOINTMENTS
+// ============================================================
+app.get("/appointments", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        a.appointment_id,
+        a.appointment_date,
+        a.appointment_time,
+        a.reason,
+        a.status,
+        a.patient_id,
+        p.first_name || ' ' || p.last_name   AS patient_name,
+        p.blood_group                          AS patient_blood,
+        p.contact_number                       AS patient_contact,
+        a.doctor_id,
+        d.first_name || ' ' || d.last_name    AS doctor_name,
+        d.specialization                       AS doctor_specialization,
+        dep.name                               AS department_name
+      FROM appointment a
+      JOIN patient    p   ON p.patient_id  = a.patient_id
+      JOIN doctor     d   ON d.doctor_id   = a.doctor_id
+      LEFT JOIN department dep ON dep.department_id = d.department_id
+      ORDER BY a.appointment_date DESC, a.appointment_time DESC
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/appointments", async (req, res) => {
+  const { patient_id, doctor_id, appointment_date, appointment_time, reason, status } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO appointment (patient_id, doctor_id, appointment_date, appointment_time, reason, status) VALUES ($1,$2,$3,$4,$5,$6) RETURNING appointment_id",
+      [patient_id, doctor_id, appointment_date, appointment_time, reason, status]
+    );
+    res.json({ success: true, id: rows[0].appointment_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/appointments/:id", async (req, res) => {
   const { id } = req.params;
   const { patient_id, doctor_id, appointment_date, appointment_time, reason, status } = req.body;
-  
-  db.query(
-    "UPDATE appointment SET patient_id=?, doctor_id=?, appointment_date=?, appointment_time=?, reason=?, status=? WHERE appointment_id=?",
-    [patient_id, doctor_id, appointment_date, appointment_time, reason, status, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Appointment updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE appointment SET patient_id=$1, doctor_id=$2, appointment_date=$3, appointment_time=$4, reason=$5, status=$6 WHERE appointment_id=$7",
+      [patient_id, doctor_id, appointment_date, appointment_time, reason, status, id]
+    );
+    res.json({ success: true, message: "Appointment updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// UPDATE Admission
-app.put("/admissions/:id", (req, res) => {
+app.delete("/appointments/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await query("DELETE FROM appointment WHERE appointment_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Appointment not found" });
+    res.json({ success: true, message: "Appointment deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// ADMISSIONS
+// ============================================================
+app.get("/admissions", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        a.admission_id,
+        a.admission_date,
+        a.discharge_date,
+        a.reason,
+        a.diagnosis,
+        a.status,
+        a.patient_id,
+        p.first_name || ' ' || p.last_name   AS patient_name,
+        p.blood_group                          AS patient_blood,
+        p.contact_number                       AS patient_contact,
+        a.doctor_id,
+        d.first_name || ' ' || d.last_name    AS doctor_name,
+        d.specialization                       AS doctor_specialization,
+        a.room_id,
+        r.room_number,
+        r.room_type,
+        r.floor,
+        dep.name                               AS department_name
+      FROM admission a
+      JOIN patient    p   ON p.patient_id   = a.patient_id
+      JOIN doctor     d   ON d.doctor_id    = a.doctor_id
+      JOIN room       r   ON r.room_id      = a.room_id
+      LEFT JOIN department dep ON dep.department_id = d.department_id
+      ORDER BY a.admission_date DESC
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/admissions", async (req, res) => {
+  const { patient_id, doctor_id, room_id, reason, admission_date, status } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO admission (patient_id, doctor_id, room_id, reason, admission_date, status) VALUES ($1,$2,$3,$4,$5,$6) RETURNING admission_id",
+      [patient_id, doctor_id, room_id, reason, admission_date, status || "Active"]
+    );
+    // Mark room unavailable
+    await query("UPDATE room SET is_available=FALSE WHERE room_id=$1", [room_id]);
+    res.json({ success: true, id: rows[0].admission_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/admissions/:id", async (req, res) => {
   const { id } = req.params;
   const { patient_id, doctor_id, room_id, admission_date, discharge_date, reason, diagnosis, status } = req.body;
-  
-  db.query(
-    "UPDATE admission SET patient_id=?, doctor_id=?, room_id=?, admission_date=?, discharge_date=?, reason=?, diagnosis=?, status=? WHERE admission_id=?",
-    [patient_id, doctor_id, room_id, admission_date, discharge_date, reason, diagnosis, status, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Admission updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE admission SET patient_id=$1, doctor_id=$2, room_id=$3, admission_date=$4, discharge_date=$5, reason=$6, diagnosis=$7, status=$8 WHERE admission_id=$9",
+      [patient_id, doctor_id, room_id, admission_date, discharge_date, reason, diagnosis, status, id]
+    );
+    res.json({ success: true, message: "Admission updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// UPDATE Out-Patient Visit
-app.put("/outpatients/:id", (req, res) => {
+app.delete("/admissions/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await query("DELETE FROM admission WHERE admission_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Admission not found" });
+    res.json({ success: true, message: "Admission deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// OUT-PATIENTS
+// ============================================================
+app.get("/outpatients", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        ov.visit_id,
+        ov.visit_date,
+        ov.chief_complaint,
+        ov.diagnosis,
+        ov.treatment_plan,
+        ov.follow_up_date,
+        ov.appointment_id,
+        ov.patient_id,
+        p.first_name || ' ' || p.last_name   AS patient_name,
+        p.blood_group                          AS patient_blood,
+        p.contact_number                       AS patient_contact,
+        ov.doctor_id,
+        d.first_name || ' ' || d.last_name    AS doctor_name,
+        d.specialization                       AS doctor_specialization,
+        dep.name                               AS department_name
+      FROM outpatientvisit ov
+      JOIN patient    p   ON p.patient_id  = ov.patient_id
+      JOIN doctor     d   ON d.doctor_id   = ov.doctor_id
+      LEFT JOIN department dep ON dep.department_id = d.department_id
+      ORDER BY ov.visit_date DESC
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/outpatients", async (req, res) => {
+  const { patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO outpatientvisit (patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING visit_id",
+      [patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date]
+    );
+    res.json({ success: true, id: rows[0].visit_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/outpatients/:id", async (req, res) => {
   const { id } = req.params;
   const { patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date } = req.body;
-  
-  db.query(
-    "UPDATE outpatientvisit SET patient_id=?, doctor_id=?, visit_date=?, chief_complaint=?, diagnosis=?, treatment_plan=?, follow_up_date=? WHERE visit_id=?",
-    [patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Out-patient visit updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE outpatientvisit SET patient_id=$1, doctor_id=$2, visit_date=$3, chief_complaint=$4, diagnosis=$5, treatment_plan=$6, follow_up_date=$7 WHERE visit_id=$8",
+      [patient_id, doctor_id, visit_date, chief_complaint, diagnosis, treatment_plan, follow_up_date, id]
+    );
+    res.json({ success: true, message: "Out-patient visit updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// UPDATE Billing
-app.put("/billing/:id", (req, res) => {
+app.delete("/outpatients/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await query("DELETE FROM outpatientvisit WHERE visit_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Out-patient visit not found" });
+    res.json({ success: true, message: "Out-patient visit deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// BILLING
+// ============================================================
+app.get("/billing", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        b.bill_id,
+        b.bill_date,
+        b.total_amount,
+        b.paid_amount,
+        b.total_amount - b.paid_amount     AS balance,
+        b.payment_status,
+        b.payment_method,
+        b.patient_id,
+        p.first_name || ' ' || p.last_name AS patient_name,
+        p.blood_group                       AS patient_blood,
+        p.contact_number                    AS patient_contact,
+        b.admission_id,
+        r.room_number                       AS admitted_room,
+        r.room_type                         AS room_type,
+        b.visit_id,
+        d.first_name || ' ' || d.last_name AS doctor_name,
+        d.specialization                    AS doctor_specialization
+      FROM bill b
+      JOIN patient p ON p.patient_id = b.patient_id
+      LEFT JOIN admission       a  ON a.admission_id = b.admission_id
+      LEFT JOIN room            r  ON r.room_id       = a.room_id
+      LEFT JOIN outpatientvisit ov ON ov.visit_id     = b.visit_id
+      LEFT JOIN doctor          d  ON d.doctor_id     = COALESCE(a.doctor_id, ov.doctor_id)
+      ORDER BY b.bill_date DESC
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/billing", async (req, res) => {
+  const { patient_id, total, bill_date, status, payment_method } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO bill (patient_id, total_amount, bill_date, payment_status, payment_method) VALUES ($1,$2,$3,$4,$5) RETURNING bill_id",
+      [patient_id, total, bill_date, status || "Pending", payment_method]
+    );
+    res.json({ success: true, id: rows[0].bill_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/billing/:id", async (req, res) => {
   const { id } = req.params;
   const { patient_id, total, bill_date, status, payment_method } = req.body;
-  
-  db.query(
-    "UPDATE bill SET patient_id=?, total_amount=?, bill_date=?, payment_status=?, payment_method=? WHERE bill_id=?",
-    [patient_id, total, bill_date, status, payment_method, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Bill updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE bill SET patient_id=$1, total_amount=$2, bill_date=$3, payment_status=$4, payment_method=$5 WHERE bill_id=$6",
+      [patient_id, total, bill_date, status, payment_method, id]
+    );
+    res.json({ success: true, message: "Bill updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// UPDATE Room
-app.put("/rooms/:id", (req, res) => {
+app.delete("/billing/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await query("DELETE FROM bill WHERE bill_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Bill not found" });
+    res.json({ success: true, message: "Bill deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// ROOMS
+// ============================================================
+app.get("/rooms", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        r.room_id,
+        r.room_number,
+        r.room_type,
+        r.floor,
+        r.is_available,
+        r.department_id,
+        dep.name                               AS department_name,
+        -- Current occupant (if admitted and still active)
+        p.first_name || ' ' || p.last_name    AS current_patient_name,
+        a.admission_id                         AS current_admission_id,
+        a.admission_date                       AS occupied_since
+      FROM room r
+      LEFT JOIN department dep ON dep.department_id = r.department_id
+      LEFT JOIN admission  a   ON a.room_id = r.room_id AND a.status = 'Active'
+      LEFT JOIN patient    p   ON p.patient_id = a.patient_id
+      ORDER BY r.room_number
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/rooms", async (req, res) => {
+  const { room_number, floor, room_type, department_id, is_available } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO room (room_number, floor, room_type, is_available, department_id) VALUES ($1,$2,$3,$4,$5) RETURNING room_id",
+      [room_number, floor, room_type, is_available !== false, department_id]
+    );
+    res.json({ success: true, id: rows[0].room_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/rooms/:id", async (req, res) => {
   const { id } = req.params;
   const { room_number, floor, room_type, department_id, is_available } = req.body;
-  
-  db.query(
-    "UPDATE room SET room_number=?, floor=?, room_type=?, department_id=?, is_available=? WHERE room_id=?",
-    [room_number, floor, room_type, department_id, is_available, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, message: "Room updated" });
-    }
-  );
+  try {
+    await query(
+      "UPDATE room SET room_number=$1, floor=$2, room_type=$3, department_id=$4, is_available=$5 WHERE room_id=$6",
+      [room_number, floor, room_type, department_id, is_available, id]
+    );
+    res.json({ success: true, message: "Room updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// ============ DELETE ENDPOINTS ============
-
-// DELETE Patient
-app.delete("/patients/:id", (req, res) => {
+app.delete("/rooms/:id", async (req, res) => {
   const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM patient WHERE patient_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Patient not found" });
-      }
-      res.json({ success: true, message: "Patient deleted" });
-    }
-  );
+  try {
+    const { rowCount } = await query("DELETE FROM room WHERE room_id=$1", [id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Room not found" });
+    res.json({ success: true, message: "Room deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// DELETE Appointment
-app.delete("/appointments/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM appointment WHERE appointment_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Appointment not found" });
-      }
-      res.json({ success: true, message: "Appointment deleted" });
-    }
-  );
+// ============================================================
+// DOCTORS
+// ============================================================
+app.get("/doctors", async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT
+        d.doctor_id,
+        d.first_name,
+        d.last_name,
+        d.first_name || ' ' || d.last_name  AS full_name,
+        d.specialization,
+        d.qualification,
+        d.contact_number,
+        d.email,
+        d.department_id,
+        dep.name                             AS department_name,
+        dep.location                         AS department_location,
+        COUNT(DISTINCT a.appointment_id)     AS total_appointments,
+        COUNT(DISTINCT adm.admission_id)     AS total_admissions,
+        COUNT(DISTINCT ov.visit_id)          AS total_outpatient_visits
+      FROM doctor d
+      LEFT JOIN department     dep ON dep.department_id = d.department_id
+      LEFT JOIN appointment    a   ON a.doctor_id       = d.doctor_id
+      LEFT JOIN admission      adm ON adm.doctor_id     = d.doctor_id
+      LEFT JOIN outpatientvisit ov ON ov.doctor_id      = d.doctor_id
+      GROUP BY d.doctor_id, dep.name, dep.location
+      ORDER BY d.last_name
+    `);
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// DELETE Admission
-app.delete("/admissions/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM admission WHERE admission_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Admission not found" });
-      }
-      res.json({ success: true, message: "Admission deleted" });
-    }
-  );
-});
-
-// DELETE Out-Patient Visit
-app.delete("/outpatients/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM outpatientvisit WHERE visit_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Out-patient visit not found" });
-      }
-      res.json({ success: true, message: "Out-patient visit deleted" });
-    }
-  );
-});
-
-// DELETE Billing
-app.delete("/billing/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM bill WHERE bill_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Bill not found" });
-      }
-      res.json({ success: true, message: "Bill deleted" });
-    }
-  );
-});
-
-// DELETE Room
-app.delete("/rooms/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.query(
-    "DELETE FROM room WHERE room_id=?",
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Room not found" });
-      }
-      res.json({ success: true, message: "Room deleted" });
-    }
-  );
-});
-
-app.listen(3001, () => {
-  console.log("Server running on port 3001");
-});
+// ============================================================
+// START SERVER
+// ============================================================
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

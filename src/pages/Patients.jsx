@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, User, Trash2 } from 'lucide-react'
 import { Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
 import { getPatients, createPatient, deletePatient } from '../data/api.js'
+import PatientCard from '../components/PatientCard.jsx'
 
 export default function Patients({ patientModal, onPatientModalClose }) {
   const [patients, setPatients] = useState([])
@@ -9,6 +10,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
   const [form, setForm] = useState({ firstName:'',lastName:'',dob:'',gender:'Male',blood:'O+',contact:'',email:'',address:'' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedPatient, setSelectedPatient] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,12 +125,16 @@ export default function Patients({ patientModal, onPatientModalClose }) {
     const id = p.patient_id
     const age = dob ? new Date().getFullYear() - new Date(dob).getFullYear() : 0
     return [
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ width:32, height:32, borderRadius:8, background:'rgba(79,142,247,.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div
+        style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}
+        onClick={() => setSelectedPatient(p)}
+        title="Click to view patient details"
+      >
+        <div style={{ width:32, height:32, borderRadius:8, background:'rgba(79,142,247,.12)', display:'flex', alignItems:'center', justifyContent:'center', transition:'background .15s' }}>
           <User size={14} color="var(--accent)" />
         </div>
         <div>
-          <div style={{ fontWeight:600 }}>{fName} {lName}</div>
+          <div style={{ fontWeight:600, color:'var(--accent)', textDecoration:'underline', textDecorationStyle:'dotted', textUnderlineOffset:3 }}>{fName} {lName}</div>
           <div style={{ fontSize:11, color:'var(--text3)' }}>ID #{id}</div>
         </div>
       </div>,
@@ -186,6 +192,14 @@ export default function Patients({ patientModal, onPatientModalClose }) {
           </div>
         </Modal>
       </div>
+
+      {/* Floating Patient Detail Card */}
+      {selectedPatient && (
+        <PatientCard
+          patient={selectedPatient}
+          onClose={() => setSelectedPatient(null)}
+        />
+      )}
     </div>
   )
 }
