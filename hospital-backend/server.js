@@ -1,12 +1,17 @@
 import express from "express";
 import pkg from "pg";
-import cors from "cors";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
 const { Pool } = pkg;
 const app = express();
+
+app.use(cors({
+  origin: "https://hospital-management-system-jp3t-8n74mgf5h.vercel.app",
+  credentials: true
+}));
 app.use(cors());
 app.use(express.json());
 

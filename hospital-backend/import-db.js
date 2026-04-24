@@ -1,34 +1,40 @@
-import mysql from "mysql2";
+import pkg from "pg";
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Sakthi@2004",
-  multipleStatements: true
-});
+console.log("👉 DATABASE_URL =", process.env.DATABASE_URL);
 
-db.connect(err => {
-  if (err) {
-    console.log("Connection Error:", err);
-    process.exit(1);
+const { Client } = pkg;
+
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
   }
-  console.log("Connected to MySQL");
 });
 
-// Read SQL file
-const sqlFilePath = path.resolve("../hospital_db.sql");
-const sql = fs.readFileSync(sqlFilePath, "utf8");
+async function initDB() {
+  try {
+    await client.connect();
+    console.log("✅ Connected to PostgreSQL");
 
-// Execute SQL
-db.query(sql, (err, results) => {
-  if (err) {
-    console.error("Error executing SQL:", err.message);
-  } else {
+    // ✅ Correct path (same folder)
+    const sqlFilePath = path.resolve("schema.sql");
+    const sql = fs.readFileSync(sqlFilePath, "utf8");
+
+    await client.query(sql);
+
     console.log("✅ Database initialized successfully!");
-    console.log("Tables created and test data imported");
-  }
-  db.end();
-  process.exit(0);
-});
+
+    await client.end();
+    process.exit(0);
+
+  } catch (err) {
+  console.error("❌ Full Error:", err);   // 👈 change this line
+  process.exit(1);
+}
+}
+
+initDB();
