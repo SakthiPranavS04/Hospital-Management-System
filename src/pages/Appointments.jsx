@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, CalendarDays } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
 import { getAppointments, getPatients, getDoctors, getDoctorName, getPatientName, createAppointment, deleteAppointment } from '../data/api.js'
+import { formatDate, formatTime } from '../utils/formatters.js'
 
 export default function Appointments({ appointmentModal, onAppointmentModalClose }) {
   const [appts, setAppts] = useState([])
@@ -146,8 +147,8 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
       `#${id}`,
       pName,
       getDoctorName(doctors, dId),
-      date,
-      a.appointment_time || '—',
+      formatDate(date),
+      formatTime(a.appointment_time),
       a.reason || '—',
       statusBadge(a.status),
       <div style={{ display:'flex', gap:6 }}>

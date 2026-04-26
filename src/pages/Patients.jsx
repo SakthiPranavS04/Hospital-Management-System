@@ -3,6 +3,7 @@ import { Plus, Search, User, Trash2 } from 'lucide-react'
 import { Btn, Card, Badge, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
 import { getPatients, createPatient, deletePatient } from '../data/api.js'
 import PatientCard from '../components/PatientCard.jsx'
+import { formatDate, calculateAge } from '../utils/formatters.js'
 
 export default function Patients({ patientModal, onPatientModalClose }) {
   const [patients, setPatients] = useState([])
@@ -123,7 +124,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
     const lName = p.last_name || ''
     const dob = p.date_of_birth || ''
     const id = p.patient_id
-    const age = dob ? new Date().getFullYear() - new Date(dob).getFullYear() : 0
+    const age = calculateAge(dob)
     return [
       <div
         style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}
@@ -138,12 +139,12 @@ export default function Patients({ patientModal, onPatientModalClose }) {
           <div style={{ fontSize:11, color:'var(--text3)' }}>ID #{id}</div>
         </div>
       </div>,
-      <>{dob} <span style={{ color:'var(--text3)', fontSize:11 }}>({age} yrs)</span></>,
+      <>{formatDate(dob)} <span style={{ color:'var(--text3)', fontSize:11 }}>({age} yrs)</span></>,
       p.gender || '—',
       <Badge type="info">{p.blood_group || '—'}</Badge>,
       p.contact_number || '—',
       p.email || '—',
-      p.registered_at || '—',
+      formatDate(p.registered_at),
       <button onClick={() => remove(id, `${fName} ${lName}`)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove patient">-</button>,
     ]
   })

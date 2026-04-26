@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, BedDouble } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
 import { getAdmissions, getPatients, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel, createAdmission, deleteAdmission, updateAdmission } from '../data/api.js'
+import { formatDate } from '../utils/formatters.js'
 
 export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   const [admissions, setAdmissions] = useState([])
@@ -202,8 +203,8 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
       pName,
       getDoctorName(doctors, dId),
       getRoomLabel(rooms, rId),
-      admDate,
-      dischDate,
+      formatDate(admDate),
+      dischDate === '—' ? '—' : formatDate(dischDate),
       a.reason || '—',
       a.diagnosis || '—',
       statusBadge(a.status),

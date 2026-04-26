@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Receipt } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, StatCard, statusBadge } from '../components/UI.jsx'
 import { getBills, getPatients, getPatientName, createBill, deleteBill } from '../data/api.js'
+import { formatDate } from '../utils/formatters.js'
 
 export default function Billing({ billingModal, onBillingModalClose }) {
   const [bills, setBills] = useState([])
@@ -163,7 +164,7 @@ export default function Billing({ billingModal, onBillingModalClose }) {
     return [
       `#${id}`,
       pName,
-      billDate,
+      formatDate(billDate),
       `₹${billTotal.toLocaleString()}`,
       `₹${billPaid.toLocaleString()}`,
       <span style={{ color:'var(--red)', fontWeight:600 }}>₹{(billTotal - billPaid).toLocaleString()}</span>,

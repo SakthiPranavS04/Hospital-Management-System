@@ -53,6 +53,7 @@ export default function Login({ onLoginSuccess }) {
 
       // Call parent callback
       onLoginSuccess(data.user)
+      setLoading(false)
     } catch (err) {
       setError('Connection error: ' + err.message)
       setLoading(false)

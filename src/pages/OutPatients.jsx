@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, FullRow } from '../components/UI.jsx'
 import { getOutPatients, getPatients, getDoctors, getDoctorName, getPatientName, createOutPatientVisit, deleteOutPatientVisit } from '../data/api.js'
+import { formatDate } from '../utils/formatters.js'
 
 export default function OutPatients({ outpatientModal, onOutpatientModalClose }) {
   const [visits, setVisits] = useState([])
@@ -150,11 +151,11 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
       `#${id}`,
       pName,
       getDoctorName(doctors, dId),
-      date,
+      formatDate(date),
       v.chief_complaint || '—',
       v.diagnosis || '—',
       v.treatment_plan || '—',
-      v.follow_up_date || '—',
+      formatDate(v.follow_up_date),
       <button onClick={() => remove(id, pName)} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:18, padding:0 }} title="Remove OPD visit">-</button>,
     ]
   })
