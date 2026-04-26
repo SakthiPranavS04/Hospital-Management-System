@@ -332,6 +332,12 @@ app.put("/admissions/:id", async (req, res) => {
       "UPDATE admission SET patient_id=$1, doctor_id=$2, room_id=$3, admission_date=$4, discharge_date=$5, reason=$6, diagnosis=$7, status=$8 WHERE admission_id=$9",
       [patient_id, doctor_id, room_id, admission_date, discharge_date, reason, diagnosis, status, id]
     );
+    
+    // If discharging, mark room as available
+    if (status === 'Discharged' && room_id) {
+      await query("UPDATE room SET is_available=TRUE WHERE room_id=$1", [room_id]);
+    }
+    
     res.json({ success: true, message: "Admission updated" });
   } catch (err) {
     res.status(500).json({ error: err.message });

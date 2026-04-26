@@ -54,18 +54,27 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
         room_number: form.number,
         floor: +form.floor,
         room_type: form.type,
-        department_id: form.dept,
+        department_id: +form.dept,
         is_available: true
       }
+      console.log('📤 Creating room with data:', roomData)
       const result = await createRoom(roomData)
+      console.log('📥 Room creation response:', result)
+      
       if (result.success || result.id) {
+        console.log('✅ Room created with ID:', result.id)
+        alert('✅ Room created successfully!')
         const res = await getRooms()
-        setRooms(res || [])
+        console.log('📥 Updated rooms list:', res)
+        setRooms(res.data || res || [])
         onRoomModalClose()
         setForm({ number:'', floor:'', type:'General', dept:'', available:true })
+      } else {
+        alert('❌ Failed to create room')
       }
     } catch (err) {
-      console.error('Error saving room:', err)
+      console.error('❌ Error saving room:', err)
+      alert(`❌ Error: ${err.message}`)
     }
   }
 
@@ -122,7 +131,7 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--text2)' }}>Loading rooms...</p>
         </div>
       </div>
@@ -133,18 +142,18 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
     <div style={{ width:'100%', background:'var(--bg)' }}>
 
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
         {/* Refresh Button */}
         <div style={{ marginBottom:18 }}>
           <Btn onClick={refreshData} variant="secondary" size="sm">🔄 Refresh Patient List</Btn>
         </div>
         
         {/* Stats Cards */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20, marginBottom:40 }}>
+        <div style={{ display:'grid', gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:20, marginBottom:40 }}>
           {[
-            { label:'Total Rooms',     value:rooms.length,                        color:'var(--accent)' },
-            { label:'Available',       value:rooms.filter(r => r.available).length,  color:'var(--green)' },
-            { label:'Occupied',        value:rooms.filter(r => !r.available).length, color:'var(--red)' },
+            { label:'Total Rooms',     value:rooms.length,                           color:'var(--accent)' },
+            { label:'Available',       value:rooms.filter(r => r.is_available === true).length,  color:'var(--green)' },
+            { label:'Occupied',        value:rooms.filter(r => r.is_available === false).length, color:'var(--red)' },
           ].map(s => (
             <Card key={s.label} style={{ textAlign:'center', padding:24, cursor:'pointer', transition:'all 0.3s' }}>
               <div style={{ fontSize:32, fontWeight:700, color:s.color }}>{s.value}</div>

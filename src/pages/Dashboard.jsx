@@ -80,16 +80,33 @@ export default function Dashboard() {
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+      <div style={{ 
+        maxWidth:1200, 
+        margin:'0 auto', 
+        paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, 
+        paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, 
+        paddingTop: window.innerWidth < 480 ? 24 : 40, 
+        paddingBottom: window.innerWidth < 480 ? 24 : 40 
+      }}>
         {/* Stats Row */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20, marginBottom:40 }}>
+        <div style={{ 
+          display:'grid', 
+          gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', 
+          gap: window.innerWidth < 480 ? 16 : 20, 
+          marginBottom: window.innerWidth < 480 ? 24 : 40 
+        }}>
           <StatCard label="Total Patients"       value={patients.length}        icon={Users}       color="var(--accent)"  />
           <StatCard label="Today's Appointments" value={todayAppts.length}      icon={CalendarDays} color="var(--accent3)" />
           <StatCard label="Active Admissions"    value={activeAdmissions.length} icon={BedDouble}   color="var(--accent2)" />
         </div>
 
         {/* Second Row Stats */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20, marginBottom:40 }}>
+        <div style={{ 
+          display:'grid', 
+          gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', 
+          gap: window.innerWidth < 480 ? 16 : 20, 
+          marginBottom: window.innerWidth < 480 ? 24 : 40 
+        }}>
           <StatCard label="OPD Visits"           value={outPatientVisits.length} icon={Stethoscope} color="var(--amber)"   />
           <StatCard label="Pending Bills"        value={pendingBills.length}    icon={Receipt}     color="var(--red)"     />
           <StatCard label="Available Rooms"      value={availableRooms.length}  icon={Building2}   color="var(--green)"   />

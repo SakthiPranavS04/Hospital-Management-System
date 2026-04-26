@@ -91,13 +91,13 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
     }
   }
 
-  // Show button on desktop or when hovering over menu on mobile
-  const shouldShowButton = menuHovered || window.innerWidth >= 901
+  const isMobile = window.innerWidth < 480
+  const isTablet = window.innerWidth < 768
 
   return (
     <div style={{
       width: '100%',
-      height: '350px',
+      height: isMobile ? '220px' : isTablet ? '280px' : '350px',
       backgroundImage: current.bgImage ? `url('${current.bgImage}')` : 'none',
       backgroundSize: '100% 100%',
       backgroundPosition: 'center',
@@ -108,8 +108,8 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       justifyContent: 'space-between',
       flexShrink: 0,
       overflow: 'hidden',
-      paddingLeft: '40px',
-      paddingRight: '40px',
+      paddingLeft: isMobile ? '16px' : isTablet ? '24px' : '40px',
+      paddingRight: isMobile ? '16px' : isTablet ? '24px' : '40px',
       flexDirection: 'row',
       position: 'relative',
     }}>
@@ -131,8 +131,8 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
           onClick={() => navigate(-1)}
           style={{
             position: 'absolute',
-            top: '20px',
-            left: '40px',
+            top: isMobile ? '12px' : '20px',
+            left: isMobile ? '16px' : '40px',
             zIndex: 10,
             display: 'flex',
             alignItems: 'center',
@@ -141,8 +141,8 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
             color: '#1a1f36',
             border: 'none',
             borderRadius: '6px',
-            padding: '8px 12px',
-            fontSize: '14px',
+            padding: isMobile ? '6px 10px' : '8px 12px',
+            fontSize: isMobile ? '12px' : '14px',
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
@@ -165,7 +165,7 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       )}
       {/* Left: Title */}
       <h1 style={{
-        fontSize: '42px',
+        fontSize: isMobile ? '24px' : isTablet ? '32px' : '42px',
         fontWeight: 700,
         color: 'white',
         margin: 0,
@@ -177,25 +177,24 @@ export default function Banner({ menuHovered, onRegisterPatient, onNewAppointmen
       </h1>
 
       {/* Right: Button */}
-      {current.showButton && shouldShowButton && (
+      {current.showButton && (
         <button
           onClick={handleButtonClick}
           style={{
             zIndex: 2,
             position: 'relative',
-            marginRight: '30px',
+            marginRight: window.innerWidth < 480 ? '12px' : '30px',
             backgroundColor: 'white',
             color: '#333',
             border: 'none',
             borderRadius: '6px',
-            padding: '12px 24px',
-            fontSize: '16px',
+            padding: window.innerWidth < 480 ? '10px 16px' : '12px 24px',
+            fontSize: window.innerWidth < 480 ? '13px' : '16px',
             fontWeight: '600',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
             transition: 'all 0.2s ease',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            opacity: menuHovered && window.innerWidth < 901 ? 1 : 1,
           }}
           onMouseEnter={(e) => {
             e.target.style.backgroundColor = '#f0f0f0'

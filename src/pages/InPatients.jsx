@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, BedDouble } from 'lucide-react'
 import { Btn, Card, Table, Modal, FormGrid, FullRow, statusBadge } from '../components/UI.jsx'
-import { getAdmissions, getPatients, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel, createAdmission, deleteAdmission } from '../data/api.js'
+import { getAdmissions, getPatients, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel, createAdmission, deleteAdmission, updateAdmission } from '../data/api.js'
 
 export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   const [admissions, setAdmissions] = useState([])
@@ -43,7 +43,10 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   }, [])
 
   const save = async () => {
-    if (!form.patientId || !form.doctorId || !form.roomId) return
+    if (!form.patientId || !form.doctorId || !form.roomId) {
+      alert('Please fill in all required fields')
+      return
+    }
     try {
       const admissionData = {
         patient_id: +form.patientId,
@@ -53,15 +56,24 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
         admission_date: new Date().toISOString().split('T')[0],
         status: 'Active'
       }
+      console.log('📤 Creating admission with data:', admissionData)
       const result = await createAdmission(admissionData)
+      console.log('📥 Admission creation response:', result)
+      
       if (result.success || result.id) {
+        console.log('✅ Admission created with ID:', result.id)
+        alert('✅ Patient admitted successfully!')
         const res = await getAdmissions()
-        setAdmissions(res || [])
+        console.log('📥 Updated admissions list:', res)
+        setAdmissions(res.data || res || [])
         onInpatientModalClose()
         setForm({ patientId:'', doctorId:'', roomId:'', reason:'' })
+      } else {
+        alert('❌ Failed to admit patient')
       }
     } catch (err) {
-      console.error('Error saving admission:', err)
+      console.error('❌ Error saving admission:', err)
+      alert(`❌ Error: ${err.message}`)
     }
   }
 
@@ -97,7 +109,42 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
     }
   }
 
-  const discharge = id => setAdmissions(prev => prev.map(a => (a.id === id || a.admission_id === id) ? {...a, status:'Discharged', dischargeDate:new Date().toISOString().split('T')[0]} : a))
+  const discharge = async (id) => {
+    if (!window.confirm('Are you sure you want to discharge this patient?')) return
+    try {
+      const admission = admissions.find(a => a.admission_id === id)
+      if (!admission) return
+      
+      const dischargeData = {
+        patient_id: admission.patient_id,
+        doctor_id: admission.doctor_id,
+        room_id: admission.room_id,
+        admission_date: admission.admission_date,
+        discharge_date: new Date().toISOString().split('T')[0],
+        reason: admission.reason,
+        diagnosis: admission.diagnosis,
+        status: 'Discharged'
+      }
+      
+      console.log('📤 Discharging patient with data:', dischargeData)
+      const result = await updateAdmission(id, dischargeData)
+      console.log('📥 Discharge response:', result)
+      
+      if (result.success || result.message) {
+        console.log('✅ Patient discharged successfully')
+        alert('✅ Patient discharged successfully!')
+        // Refresh admissions and rooms data
+        const [admRes, roomRes] = await Promise.all([getAdmissions(), getRooms()])
+        setAdmissions(admRes.data || admRes || [])
+        setRooms(roomRes.data || roomRes || [])
+      } else {
+        alert('❌ Failed to discharge patient')
+      }
+    } catch (err) {
+      console.error('❌ Error discharging patient:', err)
+      alert(`❌ Error: ${err.message}`)
+    }
+  }
 
   const remove = async (id, patientName) => {
     if (!window.confirm(`Are you sure you want to remove this admission for ${patientName}?`)) return
@@ -120,7 +167,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--text2)' }}>Loading in-patients...</p>
         </div>
       </div>
@@ -130,7 +177,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
   if (error) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--red)' }}>Error loading in-patients: {error}</p>
         </div>
       </div>
@@ -162,7 +209,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
     ]
   })
 
-  const available = rooms.filter(r => r.available)
+  const available = rooms.filter(r => r.is_available === true)
 
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
@@ -204,10 +251,10 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
               </select>
             </div>
             <div><label>Doctor ID *</label><input type="number" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} placeholder="Enter doctor ID" /></div>
-            <div style={{ gridColumn:'1/-1' }}><label>Room *</label>
+            <div><label>Room *</label>
               <select value={form.roomId} onChange={e=>setForm({...form,roomId:e.target.value})}>
                 <option value="">Select room</option>
-                {available.map(r=>{const rNum = r.number || r.room_number; const rType = r.type || 'General'; const rFloor = r.floor || 1; const rId = r.id || r.room_id; return <option key={rId} value={rId}>{rNum} — {rType} (Floor {rFloor})</option>})}
+                {available.map(r=>{const rNum = r.room_number; const rType = r.room_type; const rFloor = r.floor; const rId = r.room_id; return <option key={rId} value={rId}>{rNum} — {rType} (Floor {rFloor})</option>})}
               </select>
             </div>
             <FullRow><label>Reason for Admission</label><textarea value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} /></FullRow>

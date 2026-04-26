@@ -123,7 +123,7 @@ export default function Billing({ billingModal, onBillingModalClose }) {
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--text2)' }}>Loading billing data...</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function Billing({ billingModal, onBillingModalClose }) {
   if (error) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--red)' }}>Error loading billing data: {error}</p>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function Billing({ billingModal, onBillingModalClose }) {
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
         {/* Refresh Button */}
         <div style={{ marginBottom:18 }}>
           <Btn onClick={refreshData} variant="secondary" size="sm">🔄 Refresh Patient List</Btn>

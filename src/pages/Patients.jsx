@@ -101,7 +101,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
   if (loading) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--text2)' }}>Loading patients...</p>
         </div>
       </div>
@@ -111,7 +111,7 @@ export default function Patients({ patientModal, onPatientModalClose }) {
   if (error) {
     return (
       <div style={{ width:'100%', background:'var(--bg)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, paddingTop: window.innerWidth < 480 ? 24 : 40, paddingBottom: window.innerWidth < 480 ? 24 : 40 }}>
           <p style={{ fontSize:16, color:'var(--red)' }}>Error loading patients: {error}</p>
         </div>
       </div>
@@ -151,7 +151,14 @@ export default function Patients({ patientModal, onPatientModalClose }) {
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>
       {/* Content Container */}
-      <div style={{ maxWidth:1200, margin:'0 auto', paddingLeft:40, paddingRight:40, paddingTop:40, paddingBottom:40 }}>
+      <div style={{ 
+        maxWidth:1200, 
+        margin:'0 auto', 
+        paddingLeft: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, 
+        paddingRight: window.innerWidth < 480 ? 16 : window.innerWidth < 768 ? 24 : 40, 
+        paddingTop: window.innerWidth < 480 ? 24 : 40, 
+        paddingBottom: window.innerWidth < 480 ? 24 : 40 
+      }}>
         <Card style={{ marginBottom:18 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg)', border:'1px solid var(--border)', borderRadius:9, padding:'8px 14px' }}>
             <Search size={14} color="var(--text3)" />

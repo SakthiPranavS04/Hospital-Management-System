@@ -61,6 +61,9 @@ html { scroll-behavior: smooth; }
 @media (max-width: 768px) {
   body { font-size: 13px; }
   ::-webkit-scrollbar { width: 4px; }
+  .responsive-container { padding-left: 20px !important; padding-right: 20px !important; }
+  .responsive-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .responsive-grid-2 { grid-template-columns: 1fr !important; }
 }
 
 /* Mobile: 480px and below */
@@ -69,4 +72,8 @@ html { scroll-behavior: smooth; }
   input, select, textarea { padding: 7px 10px; font-size: 12px; }
   label { font-size: 11px; }
   button { font-size: 12px; }
+  .responsive-container { padding-left: 16px !important; padding-right: 16px !important; padding-top: 24px !important; padding-bottom: 24px !important; }
+  .responsive-grid-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .responsive-grid-2 { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .responsive-hide-mobile { display: none !important; }
 }
