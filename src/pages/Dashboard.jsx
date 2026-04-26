@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Users, CalendarDays, BedDouble, Stethoscope, Receipt, Building2 } from 'lucide-react'
 import { StatCard, Card, statusBadge } from '../components/UI.jsx'
-import { getPatients, getAppointments, getAdmissions, getOutPatients, getBills, getRooms, getDoctorName, getPatientName, getRoomLabel } from '../data/api.js'
+import { getPatients, getAppointments, getAdmissions, getOutPatients, getBills, getRooms, getDoctors, getDoctorName, getPatientName, getRoomLabel } from '../data/api.js'
+import { formatDate } from '../utils/formatters.js'
 
 export default function Dashboard() {
   const [patients, setPatients] = useState([])
@@ -10,6 +11,7 @@ export default function Dashboard() {
   const [outPatientVisits, setOutPatientVisits] = useState([])
   const [bills, setBills] = useState([])
   const [rooms, setRooms] = useState([])
+  const [doctors, setDoctors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -17,13 +19,14 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [pRes, aRes, admRes, opRes, bRes, rRes] = await Promise.all([
+        const [pRes, aRes, admRes, opRes, bRes, rRes, dRes] = await Promise.all([
           getPatients(),
           getAppointments(),
           getAdmissions(),
           getOutPatients(),
           getBills(),
           getRooms(),
+          getDoctors(),
         ])
 
         if (pRes.error) throw new Error(pRes.error)
@@ -32,6 +35,7 @@ export default function Dashboard() {
         if (opRes.error) throw new Error(opRes.error)
         if (bRes.error) throw new Error(bRes.error)
         if (rRes.error) throw new Error(rRes.error)
+        if (dRes.error) throw new Error(dRes.error)
 
         setPatients(pRes.data || [])
         setAppointments(aRes.data || [])
@@ -39,6 +43,7 @@ export default function Dashboard() {
         setOutPatientVisits(opRes.data || [])
         setBills(bRes.data || [])
         setRooms(rRes.data || [])
+        setDoctors(dRes.data || [])
         setError(null)
       } catch (err) {
         setError(err.message)
@@ -50,8 +55,8 @@ export default function Dashboard() {
 
     fetchData()
     
-    // Refresh data every 15 seconds to keep it in sync
-    const interval = setInterval(fetchData, 15000)
+    // Refresh data every 10 seconds to keep it truly dynamic
+    const interval = setInterval(fetchData, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -76,7 +81,10 @@ export default function Dashboard() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const todayAppts = appointments.filter(a => (a.date || a.appointment_date) === today)
+  const todayAppts = appointments.filter(a => {
+    const apptDate = (a.date || a.appointment_date || '').split('T')[0]
+    return apptDate === today
+  })
   const activeAdmissions = admissions.filter(a => a.status === 'Active')
   const pendingBills = bills.filter(b => b.payment_status !== 'Paid' && b.status !== 'Paid')
   const availableRooms = rooms.filter(r => r.is_available === true)
@@ -201,6 +209,79 @@ export default function Dashboard() {
                 {statusBadge(b.status)}
               </div>
             ))}
+          </Card>
+
+          {/* Doctors Section */}
+          <Card>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
+              <Stethoscope size={15} color="var(--accent)" />
+              <span style={{ fontWeight:600, fontSize:14 }}>Medical Staff Directory</span>
+              <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text3)', background:'var(--bg2)', padding:'3px 8px', borderRadius:6 }}>{doctors.length} doctors</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:16 }}>
+              {doctors.length === 0 ? (
+                <p style={{ color:'var(--text3)', fontSize:13, gridColumn:'1/-1' }}>No doctors found</p>
+              ) : (
+                doctors.map(d => (
+                  <div key={d.doctor_id} style={{
+                    padding:14,
+                    background:'var(--bg2)',
+                    border:'1px solid var(--border)',
+                    borderRadius:'var(--card-r)',
+                    transition:'all 0.3s',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Doctor Name */}
+                    <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:4 }}>
+                      Dr. {d.first_name} {d.last_name}
+                    </div>
+
+                    {/* Specialization */}
+                    <div style={{ fontSize:11, color:'var(--accent)', fontWeight:600, marginBottom:10, display:'inline-block', background:'rgba(79,142,247,.1)', padding:'3px 8px', borderRadius:5 }}>
+                      {d.specialization}
+                    </div>
+
+                    {/* Department */}
+                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+                      <Building2 size={13} color="var(--text3)" />
+                      <span>{d.department_name || 'N/A'}</span>
+                    </div>
+
+                    {/* Qualification */}
+                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:8, padding:'6px 8px', background:'var(--bg3)', borderRadius:4 }}>
+                      <strong>Qualification:</strong> {d.qualification || 'N/A'}
+                    </div>
+
+                    {/* Contact */}
+                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:4 }}>
+                      <strong>Phone:</strong> {d.contact_number || '—'}
+                    </div>
+                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:8 }}>
+                      <strong>Email:</strong> {d.email || '—'}
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, paddingTop:10, borderTop:'1px solid var(--border)' }}>
+                      <div style={{ textAlign:'center' }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)' }}>{d.total_appointments || 0}</div>
+                        <div style={{ fontSize:9, color:'var(--text3)' }}>Appointments</div>
+                      </div>
+                      <div style={{ textAlign:'center' }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'var(--accent2)' }}>{d.total_admissions || 0}</div>
+                        <div style={{ fontSize:9, color:'var(--text3)' }}>Admissions</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </Card>
         </div>
       </div>
