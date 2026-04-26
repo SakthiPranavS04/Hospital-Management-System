@@ -163,58 +163,15 @@ export default function Sidebar({ onMenuHoverChange, currentUser, onLogout }) {
 
       <style>{`
         @media (max-width: 900px) {
-          .nav-link { display: none; }
+          .nav-link { display: none !important; }
           .mobile-menu-btn { display: block !important; }
-          .user-info { display: none; }
-          .logout-btn { display: none; }
+          .user-info { display: none !important; }
+          .logout-btn { display: none !important; }
         }
         @media (min-width: 901px) {
           .nav-link { display: flex !important; }
           .nav-label { display: inline !important; }
           .logout-label { display: inline !important; }
-          .mobile-menu-btn { display: none !important; }
-          .mobile-nav { display: none !important; }
-        }
-      `}</style>
-    </header>
-  )
-}
-      {menuOpen && (
-        <nav style={{
-          position: 'absolute', top: 70, left: 0, right: 0,
-          background: 'var(--bg2)', borderBottom: '1px solid var(--border)',
-          display: 'flex', flexDirection: 'column', gap: 2, padding: '12px',
-          zIndex: 1000
-        }} className="mobile-nav">
-          {links.map(({ to, icon: Icon, label }) => (
-            <NavLink 
-              key={to} 
-              to={to} 
-              end={to==='/'} 
-              onClick={() => setMenuOpen(false)}
-              style={({ isActive }) => ({
-                display:'flex', alignItems:'center', gap:10, padding:'10px 12px',
-                borderRadius:8, textDecoration:'none', fontSize:13, fontWeight:500,
-                color: isActive ? 'var(--accent)' : 'var(--text2)',
-                background: isActive ? 'rgba(79,142,247,0.12)' : 'transparent',
-                transition:'all .15s',
-              })}
-            >
-              <Icon size={16} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      )}
-
-      <style>{`
-        @media (max-width: 900px) {
-          .nav-link { display: none; }
-          .mobile-menu-btn { display: block !important; }
-        }
-        @media (min-width: 901px) {
-          .nav-link { display: flex !important; }
-          .nav-label { display: inline !important; }
           .mobile-menu-btn { display: none !important; }
           .mobile-nav { display: none !important; }
         }
