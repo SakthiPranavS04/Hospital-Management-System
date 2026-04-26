@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays, BedDouble, Stethoscope, Receipt, Building2, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, BedDouble, Stethoscope, Receipt, Building2, Menu, X, LogOut } from 'lucide-react'
 
 const links = [
   { to:'/',            icon: LayoutDashboard, label:'Dashboard' },
@@ -12,7 +12,7 @@ const links = [
   { to:'/rooms',       icon: Building2,       label:'Rooms' },
 ]
 
-export default function Sidebar({ onMenuHoverChange }) {
+export default function Sidebar({ onMenuHoverChange, currentUser, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuHovered, setMenuHovered] = useState(false)
 
@@ -53,6 +53,36 @@ export default function Sidebar({ onMenuHoverChange }) {
             <span style={{ display: 'none' }} className="nav-label">{label}</span>
           </NavLink>
         ))}
+        
+        {/* User Info & Logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--border)' }}>
+          {currentUser && (
+            <span style={{ fontSize: '12px', color: 'var(--text2)', whiteSpace: 'nowrap' }} className="user-info">
+              {currentUser.username}
+            </span>
+          )}
+          <button
+            onClick={onLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 8px',
+              background: 'transparent', border: '1px solid var(--border)',
+              borderRadius: '6px', color: 'var(--text2)', cursor: 'pointer',
+              fontSize: '11px', fontWeight: 500, transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.color = 'var(--accent)'
+              e.target.style.borderColor = 'var(--accent)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.color = 'var(--text2)'
+              e.target.style.borderColor = 'var(--border)'
+            }}
+            className="logout-btn"
+          >
+            <LogOut size={12} />
+            <span style={{ display: 'none' }} className="logout-label">Logout</span>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu Button */}
@@ -78,6 +108,77 @@ export default function Sidebar({ onMenuHoverChange }) {
       </button>
 
       {/* Mobile Menu */}
+      {menuOpen && (
+        <nav style={{
+          position: 'absolute', top: 70, left: 0, right: 0,
+          background: 'var(--bg2)', borderBottom: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', gap: 2, padding: '12px',
+          zIndex: 1000
+        }} className="mobile-nav">
+          {links.map(({ to, icon: Icon, label }) => (
+            <NavLink 
+              key={to} 
+              to={to} 
+              end={to==='/'} 
+              onClick={() => setMenuOpen(false)}
+              style={({ isActive }) => ({
+                display:'flex', alignItems:'center', gap:10, padding:'10px 12px',
+                borderRadius:8, textDecoration:'none', fontSize:13, fontWeight:500,
+                color: isActive ? 'var(--accent)' : 'var(--text2)',
+                background: isActive ? 'rgba(79,142,247,0.12)' : 'transparent',
+                transition:'all .15s',
+              })}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+          
+          {/* Mobile Logout */}
+          {currentUser && (
+            <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', marginTop: '8px' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text3)', margin: '0 0 8px 0' }}>
+                Logged in as: {currentUser.username}
+              </p>
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  onLogout()
+                }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '10px 12px', background: 'rgba(79,142,247,0.12)',
+                  border: '1px solid var(--accent)', borderRadius: '6px',
+                  color: 'var(--accent)', cursor: 'pointer', fontSize: '12px',
+                  fontWeight: 500, transition: 'all 0.2s'
+                }}
+              >
+                <LogOut size={14} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </nav>
+      )}
+
+      <style>{`
+        @media (max-width: 900px) {
+          .nav-link { display: none; }
+          .mobile-menu-btn { display: block !important; }
+          .user-info { display: none; }
+          .logout-btn { display: none; }
+        }
+        @media (min-width: 901px) {
+          .nav-link { display: flex !important; }
+          .nav-label { display: inline !important; }
+          .logout-label { display: inline !important; }
+          .mobile-menu-btn { display: none !important; }
+          .mobile-nav { display: none !important; }
+        }
+      `}</style>
+    </header>
+  )
+}
       {menuOpen && (
         <nav style={{
           position: 'absolute', top: 70, left: 0, right: 0,

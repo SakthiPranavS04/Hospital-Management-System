@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar.jsx'
 import Banner from './components/Banner.jsx'
+import Login from './pages/Login.jsx'
 import Dashboard   from './pages/Dashboard.jsx'
 import Patients    from './pages/Patients.jsx'
 import Appointments from './pages/Appointments.jsx'
@@ -11,6 +12,8 @@ import Billing     from './pages/Billing.jsx'
 import Rooms       from './pages/Rooms.jsx'
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const [patientModal, setPatientModal] = useState(false)
   const [appointmentModal, setAppointmentModal] = useState(false)
   const [inpatientModal, setInpatientModal] = useState(false)
@@ -19,10 +22,37 @@ export default function App() {
   const [roomModal, setRoomModal] = useState(false)
   const [menuHovered, setMenuHovered] = useState(false)
 
+  // Check if user is logged in on mount
+  useEffect(() => {
+    const user = localStorage.getItem('user')
+    const loggedIn = localStorage.getItem('isLoggedIn')
+    if (user && loggedIn === 'true') {
+      setIsLoggedIn(true)
+      setCurrentUser(JSON.parse(user))
+    }
+  }, [])
+
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user)
+    setIsLoggedIn(true)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    localStorage.removeItem('isLoggedIn')
+    setIsLoggedIn(false)
+    setCurrentUser(null)
+  }
+
+  // If not logged in, show login page
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />
+  }
+
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', width:'100%', overflow:'hidden' }}>
-        <Sidebar onMenuHoverChange={setMenuHovered} />
+        <Sidebar onMenuHoverChange={setMenuHovered} currentUser={currentUser} onLogout={handleLogout} />
         <main style={{ flex:1, overflowY:'auto', overflowX:'hidden', background:'var(--bg)', width:'100%', display:'flex', flexDirection:'column' }}>
           <Banner 
             menuHovered={menuHovered}

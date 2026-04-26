@@ -34,6 +34,101 @@ pool.connect()
 const query = (text, params) => pool.query(text, params);
 
 // ============================================================
+// AUTHENTICATION
+// ============================================================
+
+// Register User
+app.post("/auth/register", async (req, res) => {
+  const { username, password, email, full_name } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
+
+  try {
+    // Check if username already exists
+    const { rows: existing } = await query("SELECT user_id FROM users WHERE username = $1", [username]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+
+    // Simple hash (for production, use bcrypt)
+    const hashedPassword = Buffer.from(password).toString('base64');
+
+    const { rows } = await query(
+      "INSERT INTO users (username, password, email, full_name) VALUES ($1, $2, $3, $4) RETURNING user_id, username, email, full_name",
+      [username, hashedPassword, email || null, full_name || null]
+    );
+
+    res.json({ 
+      success: true, 
+      message: "User registered successfully",
+      user: rows[0] 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Login User
+app.post("/auth/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
+
+  try {
+    const { rows } = await query("SELECT user_id, username, email, full_name, password FROM users WHERE username = $1", [username]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    const user = rows[0];
+    const hashedPassword = Buffer.from(password).toString('base64');
+
+    if (user.password !== hashedPassword) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get current user
+app.get("/auth/me", async (req, res) => {
+  const userId = req.query.user_id;
+  
+  if (!userId) {
+    return res.status(400).json({ error: "user_id is required" });
+  }
+
+  try {
+    const { rows } = await query("SELECT user_id, username, email, full_name FROM users WHERE user_id = $1", [userId]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ success: true, user: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // PATIENTS
 // ============================================================
 app.get("/patients", async (req, res) => {
