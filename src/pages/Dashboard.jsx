@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [bills, setBills] = useState([])
   const [rooms, setRooms] = useState([])
   const [doctors, setDoctors] = useState([])
+  const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -54,10 +55,6 @@ export default function Dashboard() {
     }
 
     fetchData()
-    
-    // Refresh data every 10 seconds to keep it truly dynamic
-    const interval = setInterval(fetchData, 10000)
-    return () => clearInterval(interval)
   }, [])
 
   if (loading) {
@@ -213,76 +210,166 @@ export default function Dashboard() {
 
           {/* Doctors Section */}
           <Card>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
               <Stethoscope size={15} color="var(--accent)" />
               <span style={{ fontWeight:600, fontSize:14 }}>Medical Staff Directory</span>
               <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text3)', background:'var(--bg2)', padding:'3px 8px', borderRadius:6 }}>{doctors.length} doctors</span>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns: window.innerWidth < 480 ? '1fr' : window.innerWidth < 768 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:16 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {doctors.length === 0 ? (
-                <p style={{ color:'var(--text3)', fontSize:13, gridColumn:'1/-1' }}>No doctors found</p>
+                <p style={{ color:'var(--text3)', fontSize:13 }}>No doctors found</p>
               ) : (
                 doctors.map(d => (
-                  <div key={d.doctor_id} style={{
-                    padding:14,
-                    background:'var(--bg2)',
-                    border:'1px solid var(--border)',
-                    borderRadius:'var(--card-r)',
-                    transition:'all 0.3s',
-                  }}
-                  onMouseOver={e => {
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                    e.currentTarget.style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseOut={e => {
-                    e.currentTarget.style.boxShadow = 'none'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                  }}>
-                    {/* Doctor Name */}
-                    <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', marginBottom:4 }}>
-                      Dr. {d.first_name} {d.last_name}
+                  <div
+                    key={d.doctor_id}
+                    onClick={() => setSelectedDoctor(d)}
+                    style={{
+                      padding:12,
+                      background:'var(--bg2)',
+                      border:'1px solid var(--border)',
+                      borderRadius:'var(--card-r)',
+                      cursor:'pointer',
+                      transition:'all 0.3s',
+                      display:'flex',
+                      justifyContent:'space-between',
+                      alignItems:'center'
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.background = 'var(--bg3)'
+                      e.currentTarget.style.borderColor = 'var(--accent)'
+                      e.currentTarget.style.transform = 'translateX(4px)'
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.background = 'var(--bg2)'
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                      e.currentTarget.style.transform = 'translateX(0)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight:600, fontSize:13, color:'var(--text)' }}>Dr. {d.first_name} {d.last_name}</div>
+                      <div style={{ fontSize:11, color:'var(--text2)', marginTop:2 }}>{d.specialization}</div>
                     </div>
-
-                    {/* Specialization */}
-                    <div style={{ fontSize:11, color:'var(--accent)', fontWeight:600, marginBottom:10, display:'inline-block', background:'rgba(79,142,247,.1)', padding:'3px 8px', borderRadius:5 }}>
-                      {d.specialization}
-                    </div>
-
-                    {/* Department */}
-                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
-                      <Building2 size={13} color="var(--text3)" />
-                      <span>{d.department_name || 'N/A'}</span>
-                    </div>
-
-                    {/* Qualification */}
-                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:8, padding:'6px 8px', background:'var(--bg3)', borderRadius:4 }}>
-                      <strong>Qualification:</strong> {d.qualification || 'N/A'}
-                    </div>
-
-                    {/* Contact */}
-                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:4 }}>
-                      <strong>Phone:</strong> {d.contact_number || '—'}
-                    </div>
-                    <div style={{ fontSize:10, color:'var(--text3)', marginBottom:8 }}>
-                      <strong>Email:</strong> {d.email || '—'}
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, paddingTop:10, borderTop:'1px solid var(--border)' }}>
-                      <div style={{ textAlign:'center' }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)' }}>{d.total_appointments || 0}</div>
-                        <div style={{ fontSize:9, color:'var(--text3)' }}>Appointments</div>
-                      </div>
-                      <div style={{ textAlign:'center' }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:'var(--accent2)' }}>{d.total_admissions || 0}</div>
-                        <div style={{ fontSize:9, color:'var(--text3)' }}>Admissions</div>
-                      </div>
-                    </div>
+                    <div style={{ fontSize:10, color:'var(--accent)', fontWeight:600, background:'rgba(79,142,247,.1)', padding:'4px 10px', borderRadius:5 }}>View</div>
                   </div>
                 ))
               )}
             </div>
           </Card>
+
+          {/* Doctor Detail Modal */}
+          {selectedDoctor && (
+            <div style={{
+              position:'fixed',
+              top:0,
+              left:0,
+              right:0,
+              bottom:0,
+              background:'rgba(0,0,0,0.3)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              zIndex:1000,
+              padding:16
+            }}
+            onClick={() => setSelectedDoctor(null)}
+            >
+              <div style={{
+                background:'var(--bg2)',
+                border:'1px solid var(--border)',
+                borderRadius:'var(--card-r)',
+                padding:24,
+                maxWidth:500,
+                width:'100%',
+                boxShadow:'0 10px 40px rgba(0,0,0,0.2)',
+                position:'relative'
+              }}
+              onClick={e => e.stopPropagation()}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setSelectedDoctor(null)}
+                  style={{
+                    position:'absolute',
+                    top:16,
+                    right:16,
+                    background:'none',
+                    border:'none',
+                    fontSize:24,
+                    color:'var(--text2)',
+                    cursor:'pointer',
+                    padding:0,
+                    width:32,
+                    height:32,
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    borderRadius:6,
+                    transition:'all 0.2s'
+                  }}
+                  onMouseOver={e => {
+                    e.target.style.background = 'var(--bg3)'
+                    e.target.style.color = 'var(--text)'
+                  }}
+                  onMouseOut={e => {
+                    e.target.style.background = 'none'
+                    e.target.style.color = 'var(--text2)'
+                  }}
+                >
+                  ✕
+                </button>
+
+                {/* Doctor Header */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:24, fontWeight:700, color:'var(--text)', marginBottom:4 }}>Dr. {selectedDoctor.first_name} {selectedDoctor.last_name}</div>
+                  <div style={{ fontSize:14, color:'var(--accent)', fontWeight:600, display:'inline-block', background:'rgba(79,142,247,.1)', padding:'4px 12px', borderRadius:6 }}>
+                    {selectedDoctor.specialization}
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  {/* Department */}
+                  <div style={{ borderBottom:'1px solid var(--border)', paddingBottom:12 }}>
+                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginBottom:6 }}>DEPARTMENT</div>
+                    <div style={{ fontSize:13, color:'var(--text)', display:'flex', alignItems:'center', gap:6 }}>
+                      <Building2 size={14} color="var(--accent2)" />
+                      {selectedDoctor.department_name || 'N/A'}
+                    </div>
+                  </div>
+
+                  {/* Qualification */}
+                  <div style={{ borderBottom:'1px solid var(--border)', paddingBottom:12 }}>
+                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginBottom:6 }}>QUALIFICATION</div>
+                    <div style={{ fontSize:13, color:'var(--text)' }}>{selectedDoctor.qualification || 'N/A'}</div>
+                  </div>
+
+                  {/* Contact Number */}
+                  <div style={{ borderBottom:'1px solid var(--border)', paddingBottom:12 }}>
+                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginBottom:6 }}>CONTACT NUMBER</div>
+                    <div style={{ fontSize:13, color:'var(--text)' }}>{selectedDoctor.contact_number || '—'}</div>
+                  </div>
+
+                  {/* Email */}
+                  <div style={{ borderBottom:'1px solid var(--border)', paddingBottom:12 }}>
+                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginBottom:6 }}>EMAIL</div>
+                    <div style={{ fontSize:13, color:'var(--text)', wordBreak:'break-all' }}>{selectedDoctor.email || '—'}</div>
+                  </div>
+
+                  {/* Statistics */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, paddingTop:8 }}>
+                    <div style={{ textAlign:'center', padding:12, background:'var(--bg3)', borderRadius:8 }}>
+                      <div style={{ fontSize:16, fontWeight:700, color:'var(--accent)' }}>{selectedDoctor.total_appointments || 0}</div>
+                      <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>Total Appointments</div>
+                    </div>
+                    <div style={{ textAlign:'center', padding:12, background:'var(--bg3)', borderRadius:8 }}>
+                      <div style={{ fontSize:16, fontWeight:700, color:'var(--accent2)' }}>{selectedDoctor.total_admissions || 0}</div>
+                      <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>Total Admissions</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
