@@ -74,8 +74,8 @@ export default function Dashboard() {
   const today = new Date().toISOString().split('T')[0]
   const todayAppts = appointments.filter(a => (a.date || a.appointment_date) === today)
   const activeAdmissions = admissions.filter(a => a.status === 'Active')
-  const pendingBills = bills.filter(b => b.status !== 'Paid')
-  const availableRooms = rooms.filter(r => r.available)
+  const pendingBills = bills.filter(b => b.payment_status !== 'Paid' && b.status !== 'Paid')
+  const availableRooms = rooms.filter(r => r.is_available === true)
 
   return (
     <div style={{ width:'100%', background:'var(--bg)' }}>

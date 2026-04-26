@@ -38,7 +38,10 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
   const filtered = filter === 'all' ? appts : appts.filter(a => (a.status === filter))
 
   const save = async () => {
-    if (!form.patientId || !form.doctorId || !form.date || !form.time) return
+    if (!form.patientId || !form.doctorId || !form.date || !form.time) {
+      alert('❌ Please fill in all required fields')
+      return
+    }
     try {
       const appointmentData = {
         patient_id: +form.patientId,
@@ -46,17 +49,26 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
         appointment_date: form.date,
         appointment_time: form.time,
         reason: form.reason,
-        status: form.status
+        status: form.status || 'Scheduled'
       }
+      console.log('📤 Creating appointment:', appointmentData)
       const result = await createAppointment(appointmentData)
+      console.log('📥 Appointment response:', result)
+      
       if (result.success || result.id) {
+        alert('✅ Appointment scheduled successfully!')
         const res = await getAppointments()
-        setAppts(res || [])
+        setAppts(res.data || res || [])
         onAppointmentModalClose()
         setForm({ patientId:'', doctorId:'', date:'', time:'', reason:'', status:'Scheduled' })
+      } else if (result.error) {
+        alert(`❌ Error: ${result.error}`)
+      } else {
+        alert('❌ Failed to schedule appointment')
       }
     } catch (err) {
-      console.error('Error saving appointment:', err)
+      console.error('❌ Error saving appointment:', err)
+      alert(`❌ Error: ${err.message}`)
     }
   }
 

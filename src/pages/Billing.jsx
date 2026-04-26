@@ -40,7 +40,10 @@ export default function Billing({ billingModal, onBillingModalClose }) {
   const totalPending  = bills.reduce((s, b) => s + ((Number(b.total_amount) || 0) - (Number(b.paid_amount) || 0)), 0)
 
   const save = async () => {
-    if (!form.patientId || !form.total) return
+    if (!form.patientId || !form.total) {
+      alert('❌ Please fill in all required fields')
+      return
+    }
     try {
       const billData = {
         patient_id: +form.patientId,
@@ -49,15 +52,24 @@ export default function Billing({ billingModal, onBillingModalClose }) {
         status: 'Pending',
         payment_method: form.method
       }
+      console.log('📤 Creating bill:', billData)
       const result = await createBill(billData)
+      console.log('📥 Bill response:', result)
+      
       if (result.success || result.id) {
+        alert('✅ Bill created successfully!')
         const res = await getBills()
-        setBills(res || [])
+        setBills(res.data || res || [])
         onBillingModalClose()
         setForm({ patientId:'', total:'', method:'Cash' })
+      } else if (result.error) {
+        alert(`❌ Error: ${result.error}`)
+      } else {
+        alert('❌ Failed to create bill')
       }
     } catch (err) {
-      console.error('Error saving bill:', err)
+      console.error('❌ Error saving bill:', err)
+      alert(`❌ Error: ${err.message}`)
     }
   }
 

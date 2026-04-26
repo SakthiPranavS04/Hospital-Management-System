@@ -44,7 +44,7 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
 
   const save = async () => {
     if (!form.patientId || !form.doctorId || !form.roomId) {
-      alert('Please fill in all required fields')
+      alert('❌ Please fill in all required fields (Patient, Doctor, Room)')
       return
     }
     try {
@@ -56,18 +56,23 @@ export default function InPatients({ inpatientModal, onInpatientModalClose }) {
         admission_date: new Date().toISOString().split('T')[0],
         status: 'Active'
       }
-      console.log('📤 Creating admission with data:', admissionData)
+      console.log('📤 Creating admission:', admissionData)
       const result = await createAdmission(admissionData)
-      console.log('📥 Admission creation response:', result)
+      console.log('📥 Admission response:', result)
       
       if (result.success || result.id) {
         console.log('✅ Admission created with ID:', result.id)
         alert('✅ Patient admitted successfully!')
-        const res = await getAdmissions()
-        console.log('📥 Updated admissions list:', res)
-        setAdmissions(res.data || res || [])
+        // Refresh both admissions and rooms
+        const [admRes, roomRes] = await Promise.all([getAdmissions(), getRooms()])
+        console.log('📥 Updated admissions:', admRes)
+        console.log('📥 Updated rooms:', roomRes)
+        setAdmissions(admRes.data || admRes || [])
+        setRooms(roomRes.data || roomRes || [])
         onInpatientModalClose()
         setForm({ patientId:'', doctorId:'', roomId:'', reason:'' })
+      } else if (result.error) {
+        alert(`❌ Error: ${result.error}`)
       } else {
         alert('❌ Failed to admit patient')
       }

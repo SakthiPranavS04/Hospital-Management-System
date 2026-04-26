@@ -39,7 +39,10 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
   }, [])
 
   const save = async () => {
-    if (!form.patientId || !form.doctorId) return
+    if (!form.patientId || !form.doctorId) {
+      alert('❌ Please fill in all required fields')
+      return
+    }
     try {
       const visitData = {
         patient_id: +form.patientId,
@@ -50,15 +53,24 @@ export default function OutPatients({ outpatientModal, onOutpatientModalClose })
         treatment_plan: form.treatment,
         follow_up_date: form.followUp
       }
+      console.log('📤 Creating OPD visit:', visitData)
       const result = await createOutPatientVisit(visitData)
+      console.log('📥 OPD visit response:', result)
+      
       if (result.success || result.id) {
+        alert('✅ OPD visit recorded successfully!')
         const res = await getOutPatients()
-        setVisits(res || [])
+        setVisits(res.data || res || [])
         onOutpatientModalClose()
         setForm({ patientId:'', doctorId:'', complaint:'', diagnosis:'', treatment:'', followUp:'' })
+      } else if (result.error) {
+        alert(`❌ Error: ${result.error}`)
+      } else {
+        alert('❌ Failed to record OPD visit')
       }
     } catch (err) {
-      console.error('Error saving visit:', err)
+      console.error('❌ Error saving visit:', err)
+      alert(`❌ Error: ${err.message}`)
     }
   }
 
