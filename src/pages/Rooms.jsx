@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Building2 } from 'lucide-react'
+import { Building2, X } from 'lucide-react'
 import { Card, Btn, Modal, FormGrid, statusBadge } from '../components/UI.jsx'
 import { getRooms, getAdmissions, getPatients, getDoctors, getDoctorName, getPatientName, createRoom, deleteRoom } from '../data/api.js'
 
@@ -9,6 +9,7 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
   const [patients, setPatients] = useState([])
   const [doctors, setDoctors] = useState([])
   const [form, setForm] = useState({ number:'', floor:'', type:'General', dept:'', available:true })
+  const [selectedRoom, setSelectedRoom] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -179,6 +180,7 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
                 cursor:'pointer',
                 boxShadow:'0 1px 3px rgba(0,0,0,0.05)',
               }} 
+              onClick={() => setSelectedRoom(r)}
               onMouseOver={e => {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
                 e.currentTarget.style.transform = 'translateY(-2px)'
@@ -253,6 +255,85 @@ export default function Rooms({ roomModal, onRoomModalClose }) {
             <Btn onClick={save}>Add Room</Btn>
           </div>
         </Modal>
+
+        {/* Room Details Floating Modal */}
+        {selectedRoom && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }} onClick={() => setSelectedRoom(null)}>
+            <Card style={{
+              width: '90%',
+              maxWidth: 500,
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative'
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>Room #{selectedRoom.room_number}</h3>
+                <button onClick={() => setSelectedRoom(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}>
+                  <X size={20} color="var(--text2)" />
+                </button>
+              </div>
+
+              {/* Room Details */}
+              <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 8, marginBottom: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>ROOM TYPE</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedRoom.room_type}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>FLOOR</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedRoom.floor}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>STATUS</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: selectedRoom.is_available ? 'var(--green)' : 'var(--red)' }}>
+                      {selectedRoom.is_available ? '✓ Available' : '✕ Occupied'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>DEPARTMENT</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedRoom.department_name || '—'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Patient Info (if occupied) */}
+              {getAdmission(selectedRoom.room_id) && (
+                <div style={{ background: 'rgba(79,142,247,0.1)', padding: 16, borderRadius: 8, marginBottom: 20, borderLeft: '3px solid var(--accent)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase' }}>Current Patient</div>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{getPatientName(patients, getAdmission(selectedRoom.room_id).patient_id)}</div>
+                  </div>
+                  <div style={{ display: 'grid', gap: 8, fontSize: 12, color: 'var(--text2)' }}>
+                    <div><strong>Doctor:</strong> {getDoctorName(doctors, getAdmission(selectedRoom.room_id).doctor_id)}</div>
+                    <div><strong>Admitted:</strong> {getAdmission(selectedRoom.room_id).admission_date}</div>
+                    {getAdmission(selectedRoom.room_id).reason && (
+                      <div><strong>Reason:</strong> {getAdmission(selectedRoom.room_id).reason}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Btn variant="secondary" style={{ flex: 1 }} onClick={() => setSelectedRoom(null)}>Close</Btn>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )

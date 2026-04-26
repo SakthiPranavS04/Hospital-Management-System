@@ -606,6 +606,19 @@ app.get("/doctors", async (req, res) => {
   }
 });
 
+app.post("/doctors", async (req, res) => {
+  const { first_name, last_name, specialization, qualification, contact_number, email, department_id } = req.body;
+  try {
+    const { rows } = await query(
+      "INSERT INTO doctor (first_name, last_name, specialization, qualification, contact_number, email, department_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING doctor_id",
+      [first_name, last_name, specialization, qualification, contact_number, email, department_id || 1]
+    );
+    res.json({ success: true, id: rows[0].doctor_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // START SERVER
 // ============================================================

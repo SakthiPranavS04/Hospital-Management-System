@@ -49,6 +49,10 @@ export default function Dashboard() {
     }
 
     fetchData()
+    
+    // Refresh data every 15 seconds to keep it in sync
+    const interval = setInterval(fetchData, 15000)
+    return () => clearInterval(interval)
   }, [])
 
   if (loading) {

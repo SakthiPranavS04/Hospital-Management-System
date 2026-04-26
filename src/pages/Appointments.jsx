@@ -207,7 +207,12 @@ export default function Appointments({ appointmentModal, onAppointmentModalClose
                 {patients.map(p=>{const fName = p.firstName || p.first_name; const lName = p.lastName || p.last_name; const id = p.id || p.patient_id; return <option key={id} value={id}>{fName} {lName}</option>})}
               </select>
             </div>
-            <div><label>Doctor ID *</label><input type="number" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} placeholder="Enter doctor ID" /></div>
+            <div><label>Doctor *</label>
+              <select value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})}>
+                <option value="">Select doctor</option>
+                {doctors.map(d=>{const dId = d.doctor_id; const dName = `${d.first_name} ${d.last_name} (${d.specialization})`; return <option key={dId} value={dId}>{dName}</option>})}
+              </select>
+            </div>
             <div><label>Date *</label><input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} /></div>
             <div><label>Time *</label><input type="time" value={form.time} onChange={e=>setForm({...form,time:e.target.value})} /></div>
             <div style={{ gridColumn:'1/-1' }}><label>Reason</label><input value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} /></div>
