@@ -47,11 +47,7 @@ export default function Login({ onLoginSuccess }) {
         return
       }
 
-      // Save user to localStorage
-      localStorage.setItem('user', JSON.stringify(data.user))
-      localStorage.setItem('isLoggedIn', 'true')
-
-      // Call parent callback
+      // Call parent callback (no localStorage persistence)
       onLoginSuccess(data.user)
       setLoading(false)
     } catch (err) {

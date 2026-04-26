@@ -22,15 +22,8 @@ export default function App() {
   const [roomModal, setRoomModal] = useState(false)
   const [menuHovered, setMenuHovered] = useState(false)
 
-  // Check if user is logged in on mount
-  useEffect(() => {
-    const user = localStorage.getItem('user')
-    const loggedIn = localStorage.getItem('isLoggedIn')
-    if (user && loggedIn === 'true') {
-      setIsLoggedIn(true)
-      setCurrentUser(JSON.parse(user))
-    }
-  }, [])
+  // Always require login on fresh page load
+  // No session persistence - user must login each time they open the page
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user)
