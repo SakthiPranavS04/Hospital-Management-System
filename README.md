@@ -83,7 +83,24 @@ A comprehensive web-based hospital management system built with React, Node.js, 
 
 ---
 
-## 📦 Installation & Setup
+## � Database Schema
+
+### Entity Relationship Diagram (ERD)
+
+![ER Diagram - Hospital Management System](./public/er-diagram.png)
+
+The system uses a normalized relational database with the following key entities:
+- **PATIENT**: Core patient information with patient type (in-patient/out-patient)
+- **APPOINTMENT**: Scheduled appointments linking patients and doctors
+- **DOCTOR**: Medical staff with specialization and consultation fees
+- **IN_PATIENT**: Hospital admissions with room allocation and treatment details
+- **OUT_PATIENT**: Outpatient visit records with diagnosis and follow-up scheduling
+- **BILL**: Billing records tracking payment status and amounts
+- **ROOM**: Hospital room management with occupancy tracking
+
+---
+
+## �📦 Installation & Setup
 
 ### Prerequisites
 - Node.js 16+ and npm
